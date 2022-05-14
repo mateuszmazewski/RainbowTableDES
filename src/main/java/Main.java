@@ -20,7 +20,7 @@ public class Main {
         System.out.println(sb);
 
         try {
-            rainbowTable.generate(numChains, 4);
+            rainbowTable.generate(4);
         } catch (InterruptedException ignored) {}
         double saveSeconds = rainbowTable.saveTableToFile(pathname);
         System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s\n");

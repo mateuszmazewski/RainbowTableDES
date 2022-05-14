@@ -13,7 +13,7 @@ public class RainbowTable {
     private final int chainLength;
     private final int numChains;
     private final BigInteger modulo;
-    private Map<String, String> table; // <K, V> == <endPass, startPass>
+    private final Map<String, String> table; // <K, V> == <endPass, startPass>
     private final HashAlgorithm hashAlgorithm;
 
     public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
@@ -26,7 +26,7 @@ public class RainbowTable {
         this.hashAlgorithm = hashAlgorithm;
     }
 
-    public void generate(int count) {
+    private void generationThread(int count) {
         String startPass, endPass;
         int collisions = 0;
         long timeMillis = System.currentTimeMillis();
@@ -61,13 +61,14 @@ public class RainbowTable {
         System.out.println("Table generated in " + seconds + "s" + " (" + collisions + " collisions)");
     }
 
-    public void generate(int count, int threadCount) throws InterruptedException {
+    public void generate(int threadCount) throws InterruptedException {
         Thread[] threads = new Thread[threadCount];
 
         for(int i = 0; i < threadCount; i++) {
             threads[i] = new Thread(() -> {
                 // TODO: include remainder
-                generate(count / threadCount);
+                // TODO: active assignment instead of fixed count per process?
+                generationThread(numChains / threadCount);
             });
             threads[i].start();
         }
@@ -75,6 +76,10 @@ public class RainbowTable {
         for(Thread t : threads) {
             t.join();
         }
+    }
+
+    public void generate() {
+        generationThread(numChains);
     }
 
     // TODO: randomness yields inconsistent results
