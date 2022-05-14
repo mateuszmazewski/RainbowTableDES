@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RainbowTable {
     private final char[] charset;
@@ -14,24 +15,25 @@ public class RainbowTable {
     private final int numChains;
     private final BigInteger modulo;
     private Map<String, String> table; // <K, V> == <endPass, startPass>
-    private final HashAlgorithm des;
+    private final HashAlgorithm hashAlgorithm;
 
-    public RainbowTable(String charset, int passwordLength, int chainLength, int numChains) {
+    public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
         this.charset = charset.toCharArray();
         this.passwordLength = passwordLength;
         this.chainLength = chainLength;
         this.numChains = numChains;
-        modulo = getPrimeModulus();
-        des = new DES();
+        this.modulo = getPrimeModulus();
+        this.table = new ConcurrentHashMap<>(numChains); // TODO: use separate table for each thread and join afterwards?
+        this.hashAlgorithm = hashAlgorithm;
     }
 
-    public void generate() {
-        table = new HashMap<>(numChains);
+    public void generate(int count) {
         String startPass, endPass;
         int collisions = 0;
         long timeMillis = System.currentTimeMillis();
+        int generatedChains = 0;
 
-        while (table.size() < numChains) {
+        while (generatedChains < count) {
             startPass = generateRandomPassword(passwordLength);
 
             // TODO: We shouldn't save duplicate chain but value lookup is very slow
@@ -49,6 +51,7 @@ public class RainbowTable {
             // We cannot save it because map holds unique keys
             if (!table.containsKey(endPass)) {
                 table.put(endPass, startPass);
+                generatedChains++;
             } else {
                 collisions++;
             }
@@ -57,6 +60,22 @@ public class RainbowTable {
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;
         System.out.println("Table generated in " + seconds + "s" + " (" + collisions + " collisions)");
+    }
+
+    public void generate(int count, int threadCount) throws InterruptedException {
+        Thread[] threads = new Thread[threadCount];
+
+        for(int i = 0; i < threadCount; i++) {
+            threads[i] = new Thread(() -> {
+                // TODO: include remainder
+                generate(count / threadCount);
+            });
+            threads[i].start();
+        }
+
+        for(Thread t : threads) {
+            t.join();
+        }
     }
 
     // TODO: randomness yields inconsistent results
@@ -75,7 +94,7 @@ public class RainbowTable {
 
         try {
             for (int i = 0; i < chainLength; i++) {
-                cipherText = des.hash(startPass);
+                cipherText = hashAlgorithm.hash(startPass);
                 endPass = reduce(cipherText, i);
             }
 
@@ -119,7 +138,7 @@ public class RainbowTable {
     }
 
     public double saveTableToFile(String pathname) {
-        if (table == null) {
+        if (table == null || table.size() == 0) {
             throw new NullPointerException("Table not generated");
         }
 
@@ -151,7 +170,7 @@ public class RainbowTable {
             try {
                 for (int j = i; j < chainLength; j++) {
                     endPass = reduce(cipherText, j);
-                    cipherText = des.hash(endPass);
+                    cipherText = hashAlgorithm.hash(endPass);
                 }
             } catch (BadPaddingException | IllegalBlockSizeException e) {
                 e.printStackTrace();
@@ -177,7 +196,7 @@ public class RainbowTable {
 
         try {
             for (int j = 0; j < chainLength; j++) {
-                cipherText = des.hash(password);
+                cipherText = hashAlgorithm.hash(password);
 
                 if (cipherText.equals(cipherTextToFind)) {
                     lookup = password;
