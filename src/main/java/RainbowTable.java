@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -126,12 +125,12 @@ public class RainbowTable {
     }
 
     private BigInteger getPrimeModulus() {
-        BigInteger max = BigInteger.ZERO;
+        // max is calculated as geometric progression sum (a1=q=charset.length, n=passwordLength)
+        BigInteger charsetLength = BigInteger.valueOf(charset.length);
+        BigInteger numerator = charsetLength.multiply(BigInteger.ONE.subtract(charsetLength.pow(passwordLength)));
+        BigInteger denominator = BigInteger.ONE.subtract(charsetLength);
 
-        for (int i = 1; i <= passwordLength; i++) {
-            max = max.add(BigInteger.valueOf(charset.length).pow(i));
-        }
-
+        BigInteger max = numerator.divide(denominator);
         BigInteger prime = max.nextProbablePrime();
         System.out.println("prime modulus: " + prime);
         return prime;
