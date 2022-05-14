@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,12 +70,11 @@ public class RainbowTable {
     }
 
     private String generateChain(String startPass) {
-        byte[] cipherText;
-        String endPass = startPass;
+        String cipherText, endPass = startPass;
 
         try {
             for (int i = 0; i < chainLength; i++) {
-                cipherText = des.encrypt(startPass.getBytes());
+                cipherText = des.encrypt(startPass);
                 endPass = reduce(cipherText, i);
             }
 
@@ -88,12 +86,12 @@ public class RainbowTable {
         return null;
     }
 
-    private String reduce(byte[] cipherText, int position) {
+    private String reduce(String cipherText, int position) {
         BigInteger index;
         StringBuilder sb = new StringBuilder();
 
         // Convert hex string into decimal value
-        BigInteger temp = new BigInteger(DES.toHex(cipherText), 16);
+        BigInteger temp = new BigInteger(cipherText, 16);
         // Reduction output depends on the chain position
         temp = temp.add(BigInteger.valueOf(position));
         temp = temp.mod(modulo);
@@ -141,9 +139,8 @@ public class RainbowTable {
         return timeMillis / 1000.0;
     }
 
-    public String lookup(byte[] cipherTextToCrack) {
-        byte[] cipherText;
-        String endPass = null, lookup = null;
+    public String lookup(String cipherTextToCrack) {
+        String cipherText, endPass = null, lookup = null;
         long timeMillis = System.currentTimeMillis();
 
         // Start from the last reduction function
@@ -153,7 +150,7 @@ public class RainbowTable {
             try {
                 for (int j = i; j < chainLength; j++) {
                     endPass = reduce(cipherText, j);
-                    cipherText = des.encrypt(endPass.getBytes());
+                    cipherText = des.encrypt(endPass);
                 }
             } catch (BadPaddingException | IllegalBlockSizeException e) {
                 e.printStackTrace();
@@ -173,15 +170,15 @@ public class RainbowTable {
         return lookup;
     }
 
-    private String lookupChain(String startPass, byte[] cipherTextToFind) {
-        byte[] cipherText;
+    private String lookupChain(String startPass, String cipherTextToFind) {
+        String cipherText;
         String password = startPass, lookup = null;
 
         try {
             for (int j = 0; j < chainLength; j++) {
-                cipherText = des.encrypt(password.getBytes());
+                cipherText = des.encrypt(password);
 
-                if (Arrays.equals(cipherText, cipherTextToFind)) {
+                if (cipherText.equals(cipherTextToFind)) {
                     lookup = password;
                     break;
                 }
@@ -214,16 +211,15 @@ public class RainbowTable {
         double saveSeconds = rainbowTable.saveTableToFile(pathname);
         System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s\n");
 
-        byte[] cipherTextToCrack;
-        String foundPass;
+        String cipherTextToCrack, foundPass;
 
         try {
-            cipherTextToCrack = rainbowTable.des.encrypt("tajne".getBytes());
+            cipherTextToCrack = rainbowTable.des.encrypt("tajne");
             foundPass = rainbowTable.lookup(cipherTextToCrack);
             if (foundPass != null) {
-                System.out.println("For cipherText: " + DES.toHex(cipherTextToCrack) + " found password: " + foundPass);
+                System.out.println("For cipherText: " + cipherTextToCrack + " found password: " + foundPass);
             } else {
-                System.out.println("Rainbow table doesn't contain the password for given cipherText: " + DES.toHex(cipherTextToCrack));
+                System.out.println("Rainbow table doesn't contain the password for given cipherText: " + cipherTextToCrack);
             }
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
