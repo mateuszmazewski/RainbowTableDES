@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -140,11 +141,65 @@ public class RainbowTable {
         return timeMillis / 1000.0;
     }
 
+    public String lookup(byte[] cipherTextToCrack) {
+        byte[] cipherText;
+        String endPass = null, lookup = null;
+        long timeMillis = System.currentTimeMillis();
+
+        // Start from the last reduction function
+        for (int i = chainLength - 1; i >= 0; i--) {
+            cipherText = cipherTextToCrack;
+
+            try {
+                for (int j = i; j < chainLength; j++) {
+                    endPass = reduce(cipherText, j);
+                    cipherText = des.encrypt(endPass.getBytes());
+                }
+            } catch (BadPaddingException | IllegalBlockSizeException e) {
+                e.printStackTrace();
+            }
+
+            if (endPass != null && table.containsKey(endPass)) {
+                lookup = lookupChain(table.get(endPass), cipherTextToCrack);
+                if (lookup != null) {
+                    break;
+                }
+            }
+        }
+
+        timeMillis = System.currentTimeMillis() - timeMillis;
+        double seconds = timeMillis / 1000.0;
+        System.out.println("Lookup took " + seconds + "s");
+        return lookup;
+    }
+
+    private String lookupChain(String startPass, byte[] cipherTextToFind) {
+        byte[] cipherText;
+        String password = startPass, lookup = null;
+
+        try {
+            for (int j = 0; j < chainLength; j++) {
+                cipherText = des.encrypt(password.getBytes());
+
+                if (Arrays.equals(cipherText, cipherTextToFind)) {
+                    lookup = password;
+                    break;
+                }
+
+                password = reduce(cipherText, j);
+            }
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
+
+        return lookup;
+    }
+
     public static void main(String[] args) {
-        String charset = "0123456789abcdefghijklmnopqrstuvwxyz";
+        String charset = "abctajxyzne";
         int passwordLength = 5;
-        int chainLength = 2;
-        int numChains = 1000000;
+        int chainLength = 1000;
+        int numChains = 10000;
         String pathname = "table.txt";
 
         RainbowTable rainbowTable = new RainbowTable(charset, passwordLength, chainLength, numChains);
@@ -157,6 +212,21 @@ public class RainbowTable {
 
         rainbowTable.generate();
         double saveSeconds = rainbowTable.saveTableToFile(pathname);
-        System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s");
+        System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s\n");
+
+        byte[] cipherTextToCrack;
+        String foundPass;
+
+        try {
+            cipherTextToCrack = rainbowTable.des.encrypt("tajne".getBytes());
+            foundPass = rainbowTable.lookup(cipherTextToCrack);
+            if (foundPass != null) {
+                System.out.println("For cipherText: " + DES.toHex(cipherTextToCrack) + " found password: " + foundPass);
+            } else {
+                System.out.println("Rainbow table doesn't contain the password for given cipherText: " + DES.toHex(cipherTextToCrack));
+            }
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
     }
 }
