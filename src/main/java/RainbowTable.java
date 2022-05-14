@@ -14,7 +14,7 @@ public class RainbowTable {
     private final int numChains;
     private final BigInteger modulo;
     private Map<String, String> table; // <K, V> == <endPass, startPass>
-    private final DES des;
+    private final HashAlgorithm des;
 
     public RainbowTable(String charset, int passwordLength, int chainLength, int numChains) {
         this.charset = charset.toCharArray();
@@ -59,6 +59,7 @@ public class RainbowTable {
         System.out.println("Table generated in " + seconds + "s" + " (" + collisions + " collisions)");
     }
 
+    // TODO: randomness yields inconsistent results
     private String generateRandomPassword(int passwordLength) {
         StringBuilder sb = new StringBuilder(passwordLength);
 
@@ -74,7 +75,7 @@ public class RainbowTable {
 
         try {
             for (int i = 0; i < chainLength; i++) {
-                cipherText = des.encrypt(startPass);
+                cipherText = des.hash(startPass);
                 endPass = reduce(cipherText, i);
             }
 
@@ -150,7 +151,7 @@ public class RainbowTable {
             try {
                 for (int j = i; j < chainLength; j++) {
                     endPass = reduce(cipherText, j);
-                    cipherText = des.encrypt(endPass);
+                    cipherText = des.hash(endPass);
                 }
             } catch (BadPaddingException | IllegalBlockSizeException e) {
                 e.printStackTrace();
@@ -176,7 +177,7 @@ public class RainbowTable {
 
         try {
             for (int j = 0; j < chainLength; j++) {
-                cipherText = des.encrypt(password);
+                cipherText = des.hash(password);
 
                 if (cipherText.equals(cipherTextToFind)) {
                     lookup = password;
@@ -214,7 +215,7 @@ public class RainbowTable {
         String cipherTextToCrack, foundPass;
 
         try {
-            cipherTextToCrack = rainbowTable.des.encrypt("tajne");
+            cipherTextToCrack = rainbowTable.des.hash("tajne");
             foundPass = rainbowTable.lookup(cipherTextToCrack);
             if (foundPass != null) {
                 System.out.println("For cipherText: " + cipherTextToCrack + " found password: " + foundPass);
