@@ -1,5 +1,6 @@
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 
 public class DES implements HashAlgorithm {
@@ -10,9 +11,22 @@ public class DES implements HashAlgorithm {
 
     public DES() {
         try {
-            SecretKey secretKey = KeyGenerator.getInstance("DES").generateKey();
-            //iv = generateIv();
+            initialize(KeyGenerator.getInstance("DES").generateKey());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    public DES(SecretKeySpec secretKeySpec) {
+        try {
+            initialize(SecretKeyFactory.getInstance("DES").generateSecret(secretKeySpec));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void initialize(SecretKey secretKey) {
+        try {
             encryptor = Cipher.getInstance("DES/ECB/PKCS5Padding");
             encryptor.init(Cipher.ENCRYPT_MODE, secretKey);
             //encryptor.init(Cipher.ENCRYPT_MODE, secretKey, iv);
