@@ -29,7 +29,8 @@ public class RainbowTable {
         this.random = new Random();
     }
 
-    private void generationThread(int count) {
+    // TODO: move logging to RainbowTableVerbose (collisions is problematic)
+    protected void generationThread(int count) {
         String startPass, endPass;
         int collisions = 0;
         long timeMillis = System.currentTimeMillis();
@@ -132,15 +133,13 @@ public class RainbowTable {
         return sb.toString();
     }
 
-    private BigInteger getPrimeModulus() {
-        BigInteger possiblePasswordCount = BigInteger.valueOf(charset.length).pow(passwordLength);
-        System.out.println("prime modulus: " + possiblePasswordCount);
-        return possiblePasswordCount;
+    protected BigInteger getPrimeModulus() {
+        return BigInteger.valueOf(charset.length).pow(passwordLength);
     }
 
     public double saveTableToFile(String pathname) {
         if (table == null || table.size() == 0) {
-            throw new NullPointerException("Table not generated");
+            throw new IllegalStateException("Table not generated");
         }
 
         File out = new File(pathname);
@@ -163,7 +162,6 @@ public class RainbowTable {
 
     public String lookup(String cipherTextToCrack) {
         String cipherText, endPass = null, lookup = null;
-        long timeMillis = System.currentTimeMillis();
 
         // Start from the last reduction function
         for (int i = chainLength - 1; i >= 0; i--) {
@@ -186,9 +184,6 @@ public class RainbowTable {
             }
         }
 
-        timeMillis = System.currentTimeMillis() - timeMillis;
-        double seconds = timeMillis / 1000.0;
-        System.out.println("Lookup took " + seconds + "s");
         return lookup;
     }
 

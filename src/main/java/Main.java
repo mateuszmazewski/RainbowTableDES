@@ -7,11 +7,11 @@ public class Main {
         String charset = "abctajxyzne";
         int passwordLength = 5;
         int chainLength = 1000;
-        int numChains = 145; // set by trial and error, higher values cause infinite(?) generation
+        int numChains = 140; // set by trial and error, higher values may cause infinite(?) generation
         String pathname = "table.txt";
         HashAlgorithm des = new DES();
 
-        RainbowTable rainbowTable = new RainbowTable(charset, passwordLength, chainLength, numChains, des);
+        RainbowTable rainbowTable = new RainbowTableVerbose(charset, passwordLength, chainLength, numChains, des);
         String sb = "Starting rainbow table generation:\n" +
                 "password length: " + passwordLength + "\n" +
                 "charset: " + charset + "\n" +
