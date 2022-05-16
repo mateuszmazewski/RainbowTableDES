@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RainbowTable {
@@ -15,6 +16,7 @@ public class RainbowTable {
     private final BigInteger modulo;
     private final Map<String, String> table; // <K, V> == <endPass, startPass>
     private final HashAlgorithm hashAlgorithm;
+    private final Random random;
 
     public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
         this.charset = charset.toCharArray();
@@ -24,6 +26,7 @@ public class RainbowTable {
         this.modulo = getPrimeModulus();
         this.table = new ConcurrentHashMap<>(numChains); // TODO: use separate table for each thread and join afterwards?
         this.hashAlgorithm = hashAlgorithm;
+        this.random = new Random();
     }
 
     private void generationThread(int count) {
@@ -87,7 +90,7 @@ public class RainbowTable {
         StringBuilder sb = new StringBuilder(passwordLength);
 
         for (int i = 0; i < passwordLength; i++) {
-            sb.append(charset[(int) (Math.random() * charset.length)]);
+            sb.append(charset[(int) (random.nextDouble() * charset.length)]);
         }
 
         return sb.toString();
@@ -98,7 +101,7 @@ public class RainbowTable {
 
         try {
             for (int i = 0; i < chainLength; i++) {
-                cipherText = hashAlgorithm.hash(startPass);
+                cipherText = hashAlgorithm.hash(endPass);
                 endPass = reduce(cipherText, i);
             }
 
@@ -120,7 +123,7 @@ public class RainbowTable {
         temp = temp.add(BigInteger.valueOf(position));
         temp = temp.mod(modulo);
 
-        while (temp.intValue() > 0) {
+        for (int i = 0; i < passwordLength; i++) {
             index = temp.mod(BigInteger.valueOf(charset.length));
             sb.append(charset[index.intValue()]);
             temp = temp.divide(BigInteger.valueOf(charset.length));
@@ -130,15 +133,9 @@ public class RainbowTable {
     }
 
     private BigInteger getPrimeModulus() {
-        // max is calculated as geometric progression sum (a1=q=charset.length, n=passwordLength)
-        BigInteger charsetLength = BigInteger.valueOf(charset.length);
-        BigInteger numerator = charsetLength.multiply(BigInteger.ONE.subtract(charsetLength.pow(passwordLength)));
-        BigInteger denominator = BigInteger.ONE.subtract(charsetLength);
-
-        BigInteger max = numerator.divide(denominator);
-        BigInteger prime = max.nextProbablePrime();
-        System.out.println("prime modulus: " + prime);
-        return prime;
+        BigInteger possiblePasswordCount = BigInteger.valueOf(charset.length).pow(passwordLength);
+        System.out.println("prime modulus: " + possiblePasswordCount);
+        return possiblePasswordCount;
     }
 
     public double saveTableToFile(String pathname) {
@@ -155,6 +152,7 @@ public class RainbowTable {
             for (Map.Entry<String, String> entry : table.entrySet()) {
                 fw.write(entry.getKey() + " " + entry.getValue() + "\n");
             }
+            fw.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
