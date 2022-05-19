@@ -7,10 +7,10 @@ public class RainbowTableVerbose extends RainbowTable {
     }
 
     @Override
-    protected void generationThread(int count) {
+    protected void generationThread(int count, int threadId, int threadCount) {
         long timeMillis = System.currentTimeMillis();
 
-        super.generationThread(count);
+        super.generationThread(count, threadId, threadCount);
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;

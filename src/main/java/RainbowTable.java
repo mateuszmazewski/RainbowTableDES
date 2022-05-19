@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,7 +15,6 @@ public class RainbowTable {
     private final BigInteger modulo;
     private final ChainCollection chainCollection;
     private final HashAlgorithm hashAlgorithm;
-    private final Random random;
     private final Set<String> usedStartHashes;
 
     public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
@@ -27,16 +25,16 @@ public class RainbowTable {
         this.modulo = getPrimeModulus();
         this.chainCollection = new ChainCollection();
         this.hashAlgorithm = hashAlgorithm;
-        this.random = new Random();
         this.usedStartHashes = ConcurrentHashMap.newKeySet();
     }
 
-    protected void generationThread(int count) {
+    protected void generationThread(int count, int threadId, int threadCount) {
+        PasswordGenerator passwordGenerator = new IncrementalPasswordGenerator(charset, threadId + 1);
         String startPass, endPass;
         int generatedChains = 0;
 
         while (generatedChains < count) {
-            startPass = generatePassword(passwordLength);
+            startPass = generatePassword(threadCount, passwordGenerator);
             endPass = generateChain(startPass);
             chainCollection.add(startPass, endPass);
             generatedChains++;
@@ -47,10 +45,11 @@ public class RainbowTable {
         Thread[] threads = new Thread[threadCount];
 
         for(int i = 0; i < threadCount; i++) {
+            int finalI = i;
             threads[i] = new Thread(() -> {
                 // TODO: include remainder
                 // TODO: active assignment instead of fixed count per process?
-                generationThread(numChains / threadCount);
+                generationThread(numChains / threadCount, finalI, threadCount);
             });
             threads[i].start();
         }
@@ -61,32 +60,19 @@ public class RainbowTable {
     }
 
     public void generate() {
-        generationThread(numChains);
+        generationThread(numChains, 0, 1);
     }
 
-    // TODO: find a better way
-    private String generatePassword(int passwordLength) {
-        //return generateRandomPassword(passwordLength);
+    private String generatePassword(int arg, PasswordGenerator passwordGenerator) {
         String password, hash = "";
         do {
-            password = generateRandomPassword(passwordLength);
+            password = passwordGenerator.next(arg);
             try {
                 hash = hashAlgorithm.hash(password);
             } catch (BadPaddingException | IllegalBlockSizeException ignored) {}
         } while (usedStartHashes.contains(hash));
         usedStartHashes.add(hash);
         return password;
-    }
-
-    // TODO: randomness yields inconsistent results
-    private String generateRandomPassword(int passwordLength) {
-        StringBuilder sb = new StringBuilder(passwordLength);
-
-        for (int i = 0; i < passwordLength; i++) {
-            sb.append(charset[(int) (random.nextDouble() * charset.length)]);
-        }
-
-        return sb.toString();
     }
 
     private String generateChain(String startPass) {
@@ -107,22 +93,13 @@ public class RainbowTable {
     }
 
     private String reduce(String cipherText, int position) {
-        BigInteger index;
-        StringBuilder sb = new StringBuilder();
-
         // Convert hex string into decimal value
         BigInteger temp = new BigInteger(cipherText, 16);
         // Reduction output depends on the chain position
         temp = temp.add(BigInteger.valueOf(position));
         temp = temp.mod(modulo);
 
-        for (int i = 0; i < passwordLength; i++) {
-            index = temp.mod(BigInteger.valueOf(charset.length));
-            sb.append(charset[index.intValue()]);
-            temp = temp.divide(BigInteger.valueOf(charset.length));
-        }
-
-        return sb.toString();
+        return new IncrementalPasswordGenerator(charset, temp.intValue() + 1).next(0);
     }
 
     protected BigInteger getPrimeModulus() {
