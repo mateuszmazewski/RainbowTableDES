@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RainbowTable {
@@ -14,9 +14,10 @@ public class RainbowTable {
     private final int chainLength;
     private final int numChains;
     private final BigInteger modulo;
-    private final Map<String, String> table; // <K, V> == <endPass, startPass>
+    private final ChainCollection chainCollection;
     private final HashAlgorithm hashAlgorithm;
     private final Random random;
+    private final Set<String> usedStartHashes;
 
     public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
         this.charset = charset.toCharArray();
@@ -24,45 +25,22 @@ public class RainbowTable {
         this.chainLength = chainLength;
         this.numChains = numChains;
         this.modulo = getPrimeModulus();
-        this.table = new ConcurrentHashMap<>(numChains); // TODO: use separate table for each thread and join afterwards?
+        this.chainCollection = new ChainCollection();
         this.hashAlgorithm = hashAlgorithm;
         this.random = new Random();
+        this.usedStartHashes = ConcurrentHashMap.newKeySet();
     }
 
-    // TODO: move logging to RainbowTableVerbose (collisions is problematic)
     protected void generationThread(int count) {
         String startPass, endPass;
-        int collisions = 0;
-        long timeMillis = System.currentTimeMillis();
         int generatedChains = 0;
 
         while (generatedChains < count) {
-            startPass = generateRandomPassword(passwordLength);
-
-            // TODO: We shouldn't save duplicate chain but value lookup is very slow
-            // If we change <K, V> to <startPass, endPass> then final lookup will slow down
-            /*
-            if(table.containsValue(startPass)) {
-                // If startPass is already in the table -> whole chain would be a duplicate
-                continue;
-            }
-            */
-
+            startPass = generatePassword(passwordLength);
             endPass = generateChain(startPass);
-
-            // If endPass is already in the table -> there was a collision in the chain
-            // We cannot save it because map holds unique keys
-            if (!table.containsKey(endPass)) {
-                table.put(endPass, startPass);
-                generatedChains++;
-            } else {
-                collisions++;
-            }
+            chainCollection.add(startPass, endPass);
+            generatedChains++;
         }
-
-        timeMillis = System.currentTimeMillis() - timeMillis;
-        double seconds = timeMillis / 1000.0;
-        System.out.println("Table generated in " + seconds + "s" + " (" + collisions + " collisions)");
     }
 
     public void generate(int threadCount) throws InterruptedException {
@@ -84,6 +62,20 @@ public class RainbowTable {
 
     public void generate() {
         generationThread(numChains);
+    }
+
+    // TODO: find a better way
+    private String generatePassword(int passwordLength) {
+        //return generateRandomPassword(passwordLength);
+        String password, hash = "";
+        do {
+            password = generateRandomPassword(passwordLength);
+            try {
+                hash = hashAlgorithm.hash(password);
+            } catch (BadPaddingException | IllegalBlockSizeException ignored) {}
+        } while (usedStartHashes.contains(hash));
+        usedStartHashes.add(hash);
+        return password;
     }
 
     // TODO: randomness yields inconsistent results
@@ -138,7 +130,7 @@ public class RainbowTable {
     }
 
     public double saveTableToFile(String pathname) {
-        if (table == null || table.size() == 0) {
+        if (chainCollection.size() == 0) {
             throw new IllegalStateException("Table not generated");
         }
 
@@ -148,8 +140,8 @@ public class RainbowTable {
 
         try {
             fw = new FileWriter(out);
-            for (Map.Entry<String, String> entry : table.entrySet()) {
-                fw.write(entry.getKey() + " " + entry.getValue() + "\n");
+            for (ChainCollection.PasswordPair pp : chainCollection.getPasswordPairs()) {
+                fw.write(pp.getStartPassword() + " " + pp.getEndPassword() + "\n");
             }
             fw.close();
         } catch (IOException e) {
@@ -176,8 +168,9 @@ public class RainbowTable {
                 e.printStackTrace();
             }
 
-            if (endPass != null && table.containsKey(endPass)) {
-                lookup = lookupChain(table.get(endPass), cipherTextToCrack);
+            Set<String> startPasswords = chainCollection.getStartPasswords(endPass);
+            for (String startPass : startPasswords) {
+                lookup = lookupChain(startPass, cipherTextToCrack);
                 if (lookup != null) {
                     break;
                 }

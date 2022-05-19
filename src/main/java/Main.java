@@ -7,7 +7,7 @@ public class Main {
         String charset = "abctajxyzne";
         int passwordLength = 5;
         int chainLength = 1000;
-        int numChains = 140; // set by trial and error, higher values may cause infinite(?) generation
+        int numChains = 10000;
         String pathname = "table.txt";
         HashAlgorithm des = new DES();
 
