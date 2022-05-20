@@ -17,7 +17,11 @@ public class IncrementalPasswordGenerator extends PasswordGenerator {
 		StringBuilder stringBuilder = new StringBuilder();
 		while (counterCurrent > 0) {
 			stringBuilder.append(charset[(counterCurrent - 1) % charset.length]);
-			counterCurrent /= charset.length;
+			if(counterCurrent % charset.length == 0) {
+				counterCurrent = counterCurrent / charset.length - 1;
+			} else {
+				counterCurrent /= charset.length;
+			}
 		}
 
 		counter += increment;
