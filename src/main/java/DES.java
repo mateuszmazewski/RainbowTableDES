@@ -3,7 +3,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 
-public class DES implements HashAlgorithm {
+public class DES {
     private final static char[] hexArray = "0123456789abcdef".toCharArray();
 
     private Cipher encryptor, decryptor;
@@ -73,11 +73,6 @@ public class DES implements HashAlgorithm {
                     + Character.digit(hex.charAt(i + 1), 16));
         }
         return bytes;
-    }
-
-    @Override
-    public String hash(String text) throws BadPaddingException, IllegalBlockSizeException {
-        return encrypt(text);
     }
 
 }

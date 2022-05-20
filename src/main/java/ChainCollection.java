@@ -55,8 +55,8 @@ public class ChainCollection {
 	public Set<String> getStartPasswords(String endPassword) {
 		synchronized (lock) {
 			return passwordPairs.stream()
-				.filter((pp) -> pp.endPassword.equals(endPassword))
-				.map((pp) -> pp.startPassword)
+				.filter(pp -> pp.endPassword.equals(endPassword))
+				.map(pp -> pp.startPassword)
 				.collect(Collectors.toSet());
 		}
 	}

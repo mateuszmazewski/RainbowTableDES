@@ -2,8 +2,8 @@ import java.math.BigInteger;
 
 public class RainbowTableVerbose extends RainbowTable {
 
-    public RainbowTableVerbose(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
-        super(charset, passwordLength, chainLength, numChains, hashAlgorithm);
+    public RainbowTableVerbose(String charset, int passwordLength, int chainLength, int numChains, DES des) {
+        super(charset, passwordLength, chainLength, numChains, des);
     }
 
     @Override

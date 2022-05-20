@@ -14,18 +14,18 @@ public class RainbowTable {
     private final int numChains;
     private final BigInteger modulo;
     private final ChainCollection chainCollection;
-    private final HashAlgorithm hashAlgorithm;
-    private final Set<String> usedStartHashes;
+    private final DES des;
+    private final Set<String> usedStartCipherTexts;
 
-    public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
+    public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, DES des) {
         this.charset = charset.toCharArray();
         this.passwordLength = passwordLength;
         this.chainLength = chainLength;
         this.numChains = numChains;
         this.modulo = getPrimeModulus();
         this.chainCollection = new ChainCollection();
-        this.hashAlgorithm = hashAlgorithm;
-        this.usedStartHashes = ConcurrentHashMap.newKeySet();
+        this.des = des;
+        this.usedStartCipherTexts = ConcurrentHashMap.newKeySet();
     }
 
     protected void generationThread(int count, int threadId, int threadCount) {
@@ -44,7 +44,7 @@ public class RainbowTable {
     public void generate(int threadCount) throws InterruptedException {
         Thread[] threads = new Thread[threadCount];
 
-        for(int i = 0; i < threadCount; i++) {
+        for (int i = 0; i < threadCount; i++) {
             int finalI = i;
             threads[i] = new Thread(() -> {
                 // TODO: include remainder
@@ -54,7 +54,7 @@ public class RainbowTable {
             threads[i].start();
         }
 
-        for(Thread t : threads) {
+        for (Thread t : threads) {
             t.join();
         }
     }
@@ -64,14 +64,15 @@ public class RainbowTable {
     }
 
     private String generatePassword(int arg, PasswordGenerator passwordGenerator) {
-        String password, hash = "";
+        String password, cipherText = "";
         do {
             password = passwordGenerator.next(arg);
             try {
-                hash = hashAlgorithm.hash(password);
-            } catch (BadPaddingException | IllegalBlockSizeException ignored) {}
-        } while (usedStartHashes.contains(hash));
-        usedStartHashes.add(hash);
+                cipherText = des.encrypt(password);
+            } catch (BadPaddingException | IllegalBlockSizeException ignored) {
+            }
+        } while (usedStartCipherTexts.contains(cipherText));
+        usedStartCipherTexts.add(cipherText);
         return password;
     }
 
@@ -80,7 +81,7 @@ public class RainbowTable {
 
         try {
             for (int i = 0; i < chainLength; i++) {
-                cipherText = hashAlgorithm.hash(endPass);
+                cipherText = des.encrypt(endPass);
                 endPass = reduce(cipherText, i);
             }
 
@@ -139,7 +140,7 @@ public class RainbowTable {
             try {
                 for (int j = i; j < chainLength; j++) {
                     endPass = reduce(cipherText, j);
-                    cipherText = hashAlgorithm.hash(endPass);
+                    cipherText = des.encrypt(endPass);
                 }
             } catch (BadPaddingException | IllegalBlockSizeException e) {
                 e.printStackTrace();
@@ -163,7 +164,7 @@ public class RainbowTable {
 
         try {
             for (int j = 0; j < chainLength; j++) {
-                cipherText = hashAlgorithm.hash(password);
+                cipherText = des.encrypt(password);
 
                 if (cipherText.equals(cipherTextToFind)) {
                     lookup = password;

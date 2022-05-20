@@ -9,26 +9,27 @@ public class Main {
         int chainLength = 1000;
         int numChains = 10000;
         String pathname = "table.txt";
-        HashAlgorithm des = new DES();
+        DES des = new DES();
 
         RainbowTable rainbowTable = new RainbowTableVerbose(charset, passwordLength, chainLength, numChains, des);
-        String sb = "Starting rainbow table generation:\n" +
+        String s = "Starting rainbow table generation:\n" +
                 "password length: " + passwordLength + "\n" +
                 "charset: " + charset + "\n" +
                 "chains: " + numChains + "\n" +
                 "reductions for each chain: " + chainLength + "\n";
-        System.out.println(sb);
+        System.out.println(s);
 
         try {
             rainbowTable.generate(4);
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+        }
         double saveSeconds = rainbowTable.saveTableToFile(pathname);
         System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s\n");
 
         String cipherTextToCrack, foundPass;
 
         try {
-            cipherTextToCrack = des.hash("tajne");
+            cipherTextToCrack = des.encrypt("tajne");
             foundPass = rainbowTable.lookup(cipherTextToCrack);
             if (foundPass != null) {
                 System.out.println("For cipherText: " + cipherTextToCrack + " found password: " + foundPass);
