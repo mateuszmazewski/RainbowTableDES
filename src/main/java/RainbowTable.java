@@ -15,6 +15,8 @@ public class RainbowTable {
     private final BigInteger modulo;
     private final Map<String, String> table; // <K, V> == <endPass, startPass>
     private final HashAlgorithm hashAlgorithm;
+    private final Object addLock;
+    private int generatedChains;
 
     public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, HashAlgorithm hashAlgorithm) {
         this.charset = charset.toCharArray();
@@ -22,34 +24,32 @@ public class RainbowTable {
         this.chainLength = chainLength;
         this.numChains = numChains;
         this.modulo = getPrimeModulus();
-        this.table = new ConcurrentHashMap<>(numChains); // TODO: use separate table for each thread and join afterwards?
+        this.table = new ConcurrentHashMap<>(numChains);
         this.hashAlgorithm = hashAlgorithm;
+        this.addLock = new Object();
     }
 
     protected void generationThread(int count, int threadId, int threadCount) {
         PasswordGenerator passwordGenerator = new IncrementalPasswordGenerator(charset, threadId + 1);
         String startPass, endPass;
-        int generatedChains = 0;
+        boolean done = false;
 
-        while (generatedChains < count) {
+        while (!done) {
             startPass = passwordGenerator.next(threadCount);
-
-            // TODO: We shouldn't save duplicate chain but value lookup is very slow
-            // If we change <K, V> to <startPass, endPass> then final lookup will slow down
-            /*
-            if(table.containsValue(startPass)) {
-                // If startPass is already in the table -> whole chain would be a duplicate
-                continue;
-            }
-            */
-
             endPass = generateChain(startPass);
 
             // If endPass is already in the table -> there was a collision in the chain
             // We cannot save it because map holds unique keys
-            if (!table.containsKey(endPass)) {
-                table.put(endPass, startPass);
-                generatedChains++;
+            synchronized (addLock) {
+                if (generatedChains < numChains) {
+                    if (!table.containsKey(endPass)) {
+                        table.put(endPass, startPass);
+                        generatedChains++;
+                    }
+                }
+                if (generatedChains >= numChains) {
+                    done = true;
+                }
             }
         }
     }
@@ -57,13 +57,11 @@ public class RainbowTable {
     public void generate(int threadCount) throws InterruptedException {
         Thread[] threads = new Thread[threadCount];
 
+        generatedChains = 0;
+
         for(int i = 0; i < threadCount; i++) {
             int finalI = i;
-            threads[i] = new Thread(() -> {
-                // TODO: include remainder
-                // TODO: active assignment instead of fixed count per process?
-                generationThread(numChains / threadCount, finalI, threadCount);
-            });
+            threads[i] = new Thread(() -> generationThread(numChains / threadCount, finalI, threadCount));
             threads[i].start();
         }
 
