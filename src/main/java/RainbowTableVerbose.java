@@ -2,8 +2,8 @@ import java.math.BigInteger;
 
 public class RainbowTableVerbose extends RainbowTable {
 
-    public RainbowTableVerbose(String charset, int passwordLength, int chainLength, int numChains, DES des) {
-        super(charset, passwordLength, chainLength, numChains, des);
+    public RainbowTableVerbose(String charset, int passwordLength, int chainLength, DES des) {
+        super(charset, passwordLength, chainLength, des);
     }
 
     @Override
@@ -18,10 +18,10 @@ public class RainbowTableVerbose extends RainbowTable {
     }
 
     @Override
-    public void generate(int threadCount) throws InterruptedException {
+    public void generate(int numChains, int threadCount) throws InterruptedException {
         long timeMillis = System.currentTimeMillis();
 
-        super.generate(threadCount);
+        super.generate(numChains, threadCount);
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;
@@ -29,10 +29,10 @@ public class RainbowTableVerbose extends RainbowTable {
     }
 
     @Override
-    public void generate() {
+    public void generate(int numChains) {
         long timeMillis = System.currentTimeMillis();
 
-        super.generate();
+        super.generate(numChains);
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;

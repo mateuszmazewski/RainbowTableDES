@@ -11,7 +11,7 @@ public class Main {
         String pathname = "table.txt";
         DES des = new DES();
 
-        RainbowTable rainbowTable = new RainbowTableVerbose(charset, passwordLength, chainLength, numChains, des);
+        RainbowTable rainbowTable = new RainbowTableVerbose(charset, passwordLength, chainLength, des);
         String s = "Starting rainbow table generation:\n" +
                 "password length: " + passwordLength + "\n" +
                 "charset: " + charset + "\n" +
@@ -20,9 +20,8 @@ public class Main {
         System.out.println(s);
 
         try {
-            rainbowTable.generate(4);
-        } catch (InterruptedException ignored) {
-        }
+            rainbowTable.generate(numChains, 4);
+        } catch (InterruptedException ignored) {}
         double saveSeconds = rainbowTable.saveTableToFile(pathname);
         System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s\n");
 

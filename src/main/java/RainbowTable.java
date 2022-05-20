@@ -11,25 +11,23 @@ public class RainbowTable {
     private final char[] charset;
     private final int passwordLength;
     private final int chainLength;
-    private final int numChains;
     private final BigInteger modulo;
-    private final Map<String, String> table; // <K, V> == <endPass, startPass>
+    private Map<String, String> table; // <K, V> == <endPass, startPass>
     private final DES des;
     private final Object addLock;
     private int generatedChains;
 
-    public RainbowTable(String charset, int passwordLength, int chainLength, int numChains, DES des) {
+    // TODO: remove passwordLength and chainLength?
+    public RainbowTable(String charset, int passwordLength, int chainLength, DES des) {
         this.charset = charset.toCharArray();
         this.passwordLength = passwordLength;
         this.chainLength = chainLength;
-        this.numChains = numChains;
         this.modulo = getPrimeModulus();
-        this.table = new ConcurrentHashMap<>(numChains);
         this.des = des;
         this.addLock = new Object();
     }
 
-    protected void generationThread(int count, int threadId, int threadCount) {
+    protected void generationThread(int numChains, int threadId, int threadCount) {
         PasswordGenerator passwordGenerator = new IncrementalPasswordGenerator(charset, threadId + 1);
         String startPass, endPass;
         boolean done = false;
@@ -54,14 +52,15 @@ public class RainbowTable {
         }
     }
 
-    public void generate(int threadCount) throws InterruptedException {
+    public void generate(int numChains, int threadCount) throws InterruptedException {
         Thread[] threads = new Thread[threadCount];
 
+        table = new ConcurrentHashMap<>(numChains);
         generatedChains = 0;
 
         for (int i = 0; i < threadCount; i++) {
             int finalI = i;
-            threads[i] = new Thread(() -> generationThread(numChains / threadCount, finalI, threadCount));
+            threads[i] = new Thread(() -> generationThread(numChains, finalI, threadCount));
             threads[i].start();
         }
 
@@ -70,7 +69,7 @@ public class RainbowTable {
         }
     }
 
-    public void generate() {
+    public void generate(int numChains) {
         generationThread(numChains, 0, 1);
     }
 
