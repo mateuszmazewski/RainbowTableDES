@@ -1,6 +1,8 @@
 import org.apache.commons.cli.*;
 
 public class Main {
+    private static final CommandLineParser parser = new DefaultParser();
+    private static final HelpFormatter formatter = new HelpFormatter();
 
     public static void main(String[] args) {
         Main main = new Main();
@@ -20,8 +22,6 @@ public class Main {
         mode.setRequired(true);
         options.addOption(mode);
 
-        CommandLineParser parser = new DefaultParser();
-        HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
 
         try {
@@ -42,12 +42,7 @@ public class Main {
                 secretKey.setDescription("[opcjonalne] klucz o długości dokładnie 8 bajtów (8 cyfr z zakresu 0-9), którym ma zostać zaszyfrowane hasło; jeśli nie będzie podany, zostanie wygenerowany losowo");
                 options.addOption(secretKey);
 
-                try {
-                    cmd = parser.parse(options, args, true);
-                } catch (ParseException e) {
-                    formatter.printHelp("java -jar rtdes.jar", options);
-                    System.exit(1);
-                }
+                cmd = parseArgs(options, args);
 
                 argPassword = cmd.getOptionValue("password");
                 argSecretKey = cmd.getOptionValue("secretKey");
@@ -62,12 +57,7 @@ public class Main {
                 secretKey.setDescription("klucz o długości dokładnie 8 bajtów (8 cyfr z zakresu 0-9), którym zostało zaszyfrowane hasło");
                 options.addOption(secretKey);
 
-                try {
-                    cmd = parser.parse(options, args, true);
-                } catch (ParseException e) {
-                    formatter.printHelp("java -jar rtdes.jar", options);
-                    System.exit(1);
-                }
+                cmd = parseArgs(options, args);
 
                 argCiphertext = cmd.getOptionValue("ciphertext");
                 argSecretKey = cmd.getOptionValue("secretKey");
@@ -91,12 +81,7 @@ public class Main {
                 nThreads.setRequired(false);
                 options.addOption(nThreads);
 
-                try {
-                    cmd = parser.parse(options, args, true);
-                } catch (ParseException e) {
-                    formatter.printHelp("java -jar rtdes.jar", options);
-                    System.exit(1);
-                }
+                cmd = parseArgs(options, args);
 
                 argFile = cmd.getOptionValue("file");
                 argChainLength = cmd.getOptionValue("chainLength");
@@ -117,12 +102,7 @@ public class Main {
                 nThreads.setRequired(false);
                 options.addOption(nThreads);
 
-                try {
-                    cmd = parser.parse(options, args, true);
-                } catch (ParseException e) {
-                    formatter.printHelp("java -jar rtdes.jar", options);
-                    System.exit(1);
-                }
+                cmd = parseArgs(options, args);
 
                 argFile = cmd.getOptionValue("file");
                 argCiphertext = cmd.getOptionValue("ciphertext");
@@ -171,6 +151,17 @@ public class Main {
         }
 
          */
+    }
+
+    private static CommandLine parseArgs(Options options, String[] args) {
+        try {
+            return parser.parse(options, args, true);
+        } catch (ParseException e) {
+            formatter.printHelp("java -jar rtdes.jar", options);
+            System.exit(1);
+        }
+
+        return null;
     }
 
     private void encrypt(String argPassword, String argSecretKey) {
