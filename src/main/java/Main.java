@@ -115,7 +115,7 @@ public class Main {
                 main.crack(argFile, argCipherText, argNThreads);
                 break;
             default:
-                // TODO
+                System.err.println("Nieznany tryb programu. Dostępne tryby: encrypt, decrypt, generate, crack");
         }
 
         /*
