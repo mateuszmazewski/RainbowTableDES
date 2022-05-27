@@ -66,7 +66,11 @@ public class Main {
                 argCipherText = cmd.getOptionValue("cipherText");
                 argSecretKey = cmd.getOptionValue("secretKey");
 
-                main.decrypt(argCipherText, argSecretKey);
+                try {
+                    main.decrypt(argCipherText, argSecretKey);
+                } catch (IllegalArgumentException e) {
+                    e.printStackTrace();
+                }
                 break;
             case "generate":
                 file.setRequired(true);
