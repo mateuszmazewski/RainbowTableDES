@@ -1,5 +1,3 @@
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -76,18 +74,12 @@ public class RainbowTable {
     private String generateChain(String startPass) {
         String cipherText, endPass = startPass;
 
-        try {
-            for (int i = 0; i < chainLength; i++) {
-                cipherText = des.encrypt(endPass);
-                endPass = reduce(cipherText, i);
-            }
-
-            return endPass;
-        } catch (BadPaddingException | IllegalBlockSizeException e) {
-            e.printStackTrace();
+        for (int i = 0; i < chainLength; i++) {
+            cipherText = des.encrypt(endPass);
+            endPass = reduce(cipherText, i);
         }
 
-        return null;
+        return endPass;
     }
 
     private String reduce(String cipherText, int position) {
@@ -134,13 +126,9 @@ public class RainbowTable {
         for (int i = chainLength - 1; i >= 0; i--) {
             cipherText = cipherTextToCrack;
 
-            try {
-                for (int j = i; j < chainLength; j++) {
-                    endPass = reduce(cipherText, j);
-                    cipherText = des.encrypt(endPass);
-                }
-            } catch (BadPaddingException | IllegalBlockSizeException e) {
-                e.printStackTrace();
+            for (int j = i; j < chainLength; j++) {
+                endPass = reduce(cipherText, j);
+                cipherText = des.encrypt(endPass);
             }
 
             if (endPass != null && table.containsKey(endPass)) {
@@ -158,19 +146,15 @@ public class RainbowTable {
         String cipherText;
         String password = startPass, lookup = null;
 
-        try {
-            for (int j = 0; j < chainLength; j++) {
-                cipherText = des.encrypt(password);
+        for (int j = 0; j < chainLength; j++) {
+            cipherText = des.encrypt(password);
 
-                if (cipherText.equals(cipherTextToFind)) {
-                    lookup = password;
-                    break;
-                }
-
-                password = reduce(cipherText, j);
+            if (cipherText.equals(cipherTextToFind)) {
+                lookup = password;
+                break;
             }
-        } catch (BadPaddingException | IllegalBlockSizeException e) {
-            e.printStackTrace();
+
+            password = reduce(cipherText, j);
         }
 
         return lookup;

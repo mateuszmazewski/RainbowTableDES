@@ -1,78 +1,83 @@
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.SecureRandom;
+import java.util.Random;
 
 public class DES {
-    private final static char[] hexArray = "0123456789abcdef".toCharArray();
+    private static final int KEY_LENGTH = 8;
+    private static final String ALG_MODE_PADDING = "DES/ECB/PKCS5Padding";
+    public static final String DES_KEY_CHARSET = "0123456789";
 
     private Cipher encryptor, decryptor;
-    //private IvParameterSpec iv;
 
     public DES() {
         try {
-            initialize(KeyGenerator.getInstance("DES").generateKey());
+            encryptor = Cipher.getInstance(ALG_MODE_PADDING);
+            decryptor = Cipher.getInstance(ALG_MODE_PADDING);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public DES(SecretKeySpec secretKeySpec) {
+    public void initializeEncryptor(String key) {
+        validateKey(key);
+
         try {
-            initialize(SecretKeyFactory.getInstance("DES").generateSecret(secretKeySpec));
+            encryptor.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getBytes(), "DES"));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void initialize(SecretKey secretKey) {
+    public void initializeDecryptor(String key) {
+        validateKey(key);
+
         try {
-            encryptor = Cipher.getInstance("DES/ECB/PKCS5Padding");
-            encryptor.init(Cipher.ENCRYPT_MODE, secretKey);
-            //encryptor.init(Cipher.ENCRYPT_MODE, secretKey, iv);
-
-            decryptor = Cipher.getInstance("DES/ECB/PKCS5Padding");
-            decryptor.init(Cipher.DECRYPT_MODE, secretKey);
-            //decryptor.init(Cipher.DECRYPT_MODE, secretKey, iv);
+            decryptor.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getBytes(), "DES"));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private IvParameterSpec generateIv() {
-        byte[] iv = new byte[8];
-        new SecureRandom().nextBytes(iv);
-        return new IvParameterSpec(iv);
+    private void validateKey(String key) {
+        if (key == null) {
+            throw new IllegalArgumentException("Klucz nie może być pusty");
+        }
+        if (!key.matches("^[0-9]{8}$")) {
+            throw new IllegalArgumentException("Klucz musi mieć długość dokładnie 8 bajtów (składać się z 8 cyfr)");
+        }
     }
 
-    public String encrypt(String plainText) throws BadPaddingException, IllegalBlockSizeException {
-        return toHex(encryptor.doFinal(plainText.getBytes()));
-    }
+    public String encrypt(String plainText) {
+        String hexCipherText = null;
 
-    public String decrypt(String cipherText) throws BadPaddingException, IllegalBlockSizeException {
-        return toHex(decryptor.doFinal(hexStringToByteArray(cipherText)));
-    }
-
-    public static String toHex(byte[] data) {
-        char[] hexChars = new char[data.length * 2];
-
-        for (int i = 0; i < data.length; i++) {
-            int v = data[i] & 0xFF;
-            hexChars[i * 2] = hexArray[v >>> 4];
-            hexChars[i * 2 + 1] = hexArray[v & 0x0F];
+        try {
+            hexCipherText = Hex.toHex(encryptor.doFinal(plainText.getBytes()));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        return new String(hexChars);
+        return hexCipherText;
     }
 
-    public static byte[] hexStringToByteArray(String hex) {
-        int len = hex.length();
-        byte[] bytes = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            bytes[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
-                    + Character.digit(hex.charAt(i + 1), 16));
+    public String decrypt(String cipherText) {
+        String hexPlainText = null;
+
+        try {
+            hexPlainText = Hex.toHex(decryptor.doFinal(Hex.hexStringToByteArray(cipherText)));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return bytes;
+
+        return hexPlainText;
+    }
+
+    public static String generateRandomKey() {
+        Random rand = new Random();
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < KEY_LENGTH; i++)
+            sb.append(DES_KEY_CHARSET.charAt(rand.nextInt(DES_KEY_CHARSET.length())));
+        return sb.toString();
     }
 
 }
