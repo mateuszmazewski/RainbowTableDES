@@ -108,7 +108,7 @@ public class RainbowTable {
         temp = temp.add(BigInteger.valueOf(position));
         temp = temp.mod(modulo);
 
-        return new IncrementalKeyGenerator(byteset, temp.longValue()).next(0L);
+        return new IncrementalKeyGenerator(byteset, temp).next(0L);
     }
 
     protected BigInteger getPrimeModulus() {
