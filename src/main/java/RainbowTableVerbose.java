@@ -2,8 +2,8 @@ import java.math.BigInteger;
 
 public class RainbowTableVerbose extends RainbowTable {
 
-    public RainbowTableVerbose(String charset, int passwordLength, int chainLength, DES des) {
-        super(charset, passwordLength, chainLength, des);
+    public RainbowTableVerbose(int passwordLength, int chainLength, String plaintext) {
+        super(passwordLength, chainLength, plaintext);
     }
 
     @Override
@@ -47,10 +47,10 @@ public class RainbowTableVerbose extends RainbowTable {
     }
 
     @Override
-    public String lookup(String cipherTextToCrack) {
+    public byte[] lookup(String cryptogramToCrack) {
         long timeMillis = System.currentTimeMillis();
 
-        String result = super.lookup(cipherTextToCrack);
+        byte[] result = super.lookup(cryptogramToCrack);
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;

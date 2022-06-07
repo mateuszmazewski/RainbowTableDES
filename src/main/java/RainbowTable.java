@@ -1,47 +1,57 @@
+import keygenerators.IncrementalKeyGenerator;
+import keygenerators.KeyGenerator;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RainbowTable {
-    private final char[] charset;
+    private final byte[] byteset;
     private final int passwordLength;
     private final int chainLength;
+    private final String plaintext;
     private final BigInteger modulo;
-    private Map<String, String> table; // <K, V> == <endPass, startPass>
-    private final DES des;
+    private Map<byte[], byte[]> table; // <K, V> == <endKey, startKey>
     private final Object addLock;
     private int generatedChains;
 
     // TODO: remove passwordLength and chainLength?
-    public RainbowTable(String charset, int passwordLength, int chainLength, DES des) {
-        this.charset = charset.toCharArray();
+    public RainbowTable(int passwordLength, int chainLength, String plaintext) {
+        this.byteset = new byte[256];
+        for (int i = 0; i < 256; i++) {
+            byteset[i] = (byte) i;
+        }
+
         this.passwordLength = passwordLength;
         this.chainLength = chainLength;
+        this.plaintext = plaintext;
+
         this.modulo = getPrimeModulus();
-        this.des = des;
         this.addLock = new Object();
     }
 
     protected void generationThread(int numChains, int threadId, int threadCount) {
-        PasswordGenerator passwordGenerator = new IncrementalPasswordGenerator(charset, threadId + 1);
-        String startPass, endPass;
+        KeyGenerator keyGenerator = new IncrementalKeyGenerator(byteset, threadId);
+        byte[] startKey, endKey;
         boolean done = false;
 
         while (!done) {
-            startPass = passwordGenerator.next(threadCount);
-            endPass = generateChain(startPass);
+            startKey = keyGenerator.next((long) threadCount);
+            endKey = generateChain(startKey);
 
-            // If endPass is already in the table -> there was a collision in the chain
+            // If endKey is already in the table -> there was a collision in the chain
             // We cannot save it because map holds unique keys
             synchronized (addLock) {
                 if (generatedChains < numChains) {
-                    if (!table.containsKey(endPass)) {
-                        table.put(endPass, startPass);
+                    if (!table.containsKey(endKey)) {
+                        table.put(endKey, startKey);
                         generatedChains++;
                     }
                 }
@@ -73,16 +83,17 @@ public class RainbowTable {
         generationThread(numChains, 0, 1);
     }
 
-    private String generateChain(String startPass) {
-        String cipherText, endPass = startPass;
+    private byte[] generateChain(byte[] startKey) {
+        String cryptogram;
+        byte[] endKey = startKey;
 
         try {
             for (int i = 0; i < chainLength; i++) {
-                cipherText = des.encrypt(endPass);
-                endPass = reduce(cipherText, i);
+                cryptogram = new DES(new SecretKeySpec(endKey, "DES")).encrypt(plaintext);
+                endKey = reduce(cryptogram, i);
             }
 
-            return endPass;
+            return endKey;
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
         }
@@ -90,18 +101,18 @@ public class RainbowTable {
         return null;
     }
 
-    private String reduce(String cipherText, int position) {
+    private byte[] reduce(String cryptogram, int position) {
         // Convert hex string into decimal value
-        BigInteger temp = new BigInteger(cipherText, 16);
+        BigInteger temp = new BigInteger(cryptogram, 16);
         // Reduction output depends on the chain position
         temp = temp.add(BigInteger.valueOf(position));
         temp = temp.mod(modulo);
 
-        return new IncrementalPasswordGenerator(charset, temp.intValue() + 1).next(0);
+        return new IncrementalKeyGenerator(byteset, temp.longValue()).next(0L);
     }
 
     protected BigInteger getPrimeModulus() {
-        return BigInteger.valueOf(charset.length).pow(passwordLength);
+        return BigInteger.valueOf(byteset.length).pow(passwordLength);
     }
 
     public double saveTableToFile(String pathname) {
@@ -115,8 +126,10 @@ public class RainbowTable {
 
         try {
             fw = new FileWriter(out);
-            for (Map.Entry<String, String> entry : table.entrySet()) {
-                fw.write(entry.getKey() + " " + entry.getValue() + "\n");
+            for (Map.Entry<byte[], byte[]> entry : table.entrySet()) {
+                fw.write(Arrays.toString(entry.getKey())); // endKey
+                fw.write(Arrays.toString(entry.getValue())); // startKey
+                fw.write("\n");
             }
             fw.close();
         } catch (IOException e) {
@@ -127,24 +140,25 @@ public class RainbowTable {
         return timeMillis / 1000.0;
     }
 
-    public String lookup(String cipherTextToCrack) {
-        String cipherText, endPass = null, lookup = null;
+    public byte[] lookup(String cryptogramToCrack) {
+        String cryptogram;
+        byte[] endKey = null, lookup = null;
 
         // Start from the last reduction function
         for (int i = chainLength - 1; i >= 0; i--) {
-            cipherText = cipherTextToCrack;
+            cryptogram = cryptogramToCrack;
 
             try {
                 for (int j = i; j < chainLength; j++) {
-                    endPass = reduce(cipherText, j);
-                    cipherText = des.encrypt(endPass);
+                    endKey = reduce(cryptogram, j);
+                    cryptogram = new DES(new SecretKeySpec(endKey, "DES")).encrypt(plaintext);
                 }
             } catch (BadPaddingException | IllegalBlockSizeException e) {
                 e.printStackTrace();
             }
 
-            if (endPass != null && table.containsKey(endPass)) {
-                lookup = lookupChain(table.get(endPass), cipherTextToCrack);
+            if (endKey != null && table.containsKey(endKey)) {
+                lookup = lookupChain(table.get(endKey), cryptogramToCrack);
                 if (lookup != null) {
                     break;
                 }
@@ -154,20 +168,20 @@ public class RainbowTable {
         return lookup;
     }
 
-    private String lookupChain(String startPass, String cipherTextToFind) {
-        String cipherText;
-        String password = startPass, lookup = null;
+    private byte[] lookupChain(byte[] startKey, String cryptogramToFind) {
+        String cryptogram;
+        byte[] key = startKey, lookup = null;
 
         try {
             for (int j = 0; j < chainLength; j++) {
-                cipherText = des.encrypt(password);
+                cryptogram = new DES(new SecretKeySpec(key, "DES")).encrypt(plaintext);
 
-                if (cipherText.equals(cipherTextToFind)) {
-                    lookup = password;
+                if (cryptogram.equals(cryptogramToFind)) {
+                    lookup = key;
                     break;
                 }
 
-                password = reduce(cipherText, j);
+                key = reduce(cryptogram, j);
             }
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
