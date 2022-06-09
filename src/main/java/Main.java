@@ -4,6 +4,12 @@ public class Main {
     private static final CommandLineParser parser = new DefaultParser();
     private static final HelpFormatter formatter = new HelpFormatter();
 
+    private enum NumberArgType {
+        chainLength,
+        nChains,
+        nThreads
+    }
+
     public static void main(String[] args) {
         Main main = new Main();
 
@@ -176,6 +182,39 @@ public class Main {
         return null;
     }
 
+    private int parseNumberString(String numberString, NumberArgType type) {
+        int number = Integer.MAX_VALUE;
+
+        try {
+            number = Integer.parseInt(numberString);
+            switch (type) {
+                case chainLength:
+                    if (number < 1 || number > 100000) {
+                        System.err.println("Długość łańcucha musi być pomiędzy 1 a 100000");
+                    }
+                    break;
+                case nChains:
+                    if (number < 1 || number > 100000) {
+                        System.err.println("Liczba łańcuchów musi być pomiędzy 1 a 100000");
+                    }
+                    break;
+                case nThreads:
+                    if (number < 1 || number > 1024) {
+                        System.err.println("Liczba wątków musi być pomiędzy 1 a 1024");
+                    }
+                    break;
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Błędny format liczby " + type);
+        }
+
+        if (number == Integer.MAX_VALUE) {
+            System.exit(-1);
+        }
+
+        return number;
+    }
+
     private void encrypt(String password, String secretKey) throws IllegalArgumentException {
         if (password == null || password.isEmpty()) {
             throw new IllegalArgumentException("Hasło nie może być puste");
@@ -204,8 +243,26 @@ public class Main {
     }
 
     private void generate(String argFile, String argChainLength, String argPassword, String argNChains, String argNThreads) {
+        int chainLength = 1000;
+        int nChains = 1000;
+        int nThreads = 1;
+
+        if (argChainLength != null && !argChainLength.isEmpty()) {
+            chainLength = parseNumberString(argChainLength, NumberArgType.chainLength);
+        }
+        if (argNChains != null && !argNChains.isEmpty()) {
+            nChains = parseNumberString(argNChains, NumberArgType.nChains);
+        }
+        if (argNThreads != null && !argNThreads.isEmpty()) {
+            nThreads = parseNumberString(argNThreads, NumberArgType.nThreads);
+        }
     }
 
     private void crack(String argFile, String argCipherText, String argNThreads) {
+        int nThreads = 1;
+
+        if (argNThreads != null && !argNThreads.isEmpty()) {
+            nThreads = parseNumberString(argNThreads, NumberArgType.nThreads);
+        }
     }
 }
