@@ -1,9 +1,7 @@
 import keygenerators.IncrementalKeyGenerator;
 import keygenerators.KeyGenerator;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
@@ -121,6 +119,7 @@ public class RainbowTable {
             fw = new FileWriter(out);
             for (Map.Entry<byte[], byte[]> entry : table.entrySet()) {
                 fw.write(Arrays.toString(entry.getKey())); // endKey
+                fw.write("#");
                 fw.write(Arrays.toString(entry.getValue())); // startKey
                 fw.write("\n");
             }
@@ -131,6 +130,66 @@ public class RainbowTable {
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         return timeMillis / 1000.0;
+    }
+
+    public boolean readTableFromFile(String pathname) {
+        table = new ConcurrentHashMap<>();
+        BufferedReader reader;
+        int nLines = 0;
+
+        try {
+            reader = new BufferedReader(new FileReader(pathname));
+        } catch (FileNotFoundException e) {
+            System.err.println("Plik nie istnieje: \"" + pathname + "\"");
+            return false;
+        }
+
+        String line;
+        String[] arrays;
+        String[] splittedArray;
+        byte[] endKey;
+        byte[] startKey;
+
+        try {
+            while ((line = reader.readLine()) != null) {
+                endKey = new byte[8];
+                startKey = new byte[8];
+                nLines++;
+                arrays = line.split("#");
+
+                if (arrays.length != 2) {
+                    throw new RuntimeException("Niepoprawny format danych, linia " + nLines);
+                }
+
+                arrays[0] = arrays[0].replace("[", "").replace("]", "");
+                arrays[1] = arrays[1].replace("[", "").replace("]", "");
+
+                splittedArray = arrays[0].split(", ");
+                for (int i = 0; i < 8; i++) {
+                    endKey[i] = Byte.parseByte(splittedArray[i]);
+                }
+                splittedArray = arrays[1].split(", ");
+                for (int i = 0; i < 8; i++) {
+                    startKey[i] = Byte.parseByte(splittedArray[i]);
+                }
+
+                table.put(endKey, startKey);
+            }
+        } catch (IOException ioe) {
+            System.err.println("Błąd podczas wczytywania pliku, linia " + nLines + ": " + ioe.getMessage());
+            return false;
+        } catch (NumberFormatException nfe) {
+            System.err.println("Błąd podczas przetwarzania danych z pliku, linia " + nLines + ": " + nfe.getMessage());
+            return false;
+        } catch (IndexOutOfBoundsException ioobe) {
+            System.err.println("Błędna długość klucza w pliku, linia " + nLines);
+            return false;
+        } catch (RuntimeException re) {
+            System.err.println(re.getMessage());
+            return false;
+        }
+
+        return true;
     }
 
     public byte[] lookup(DES des, String cryptogramToCrack) {
@@ -175,6 +234,10 @@ public class RainbowTable {
         }
 
         return lookup;
+    }
+
+    public int getTableSize() {
+        return table.size();
     }
 
 }
