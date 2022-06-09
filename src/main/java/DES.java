@@ -63,7 +63,7 @@ public class DES {
             throw new IllegalArgumentException("Klucz nie może być pusty");
         }
         if (!key.matches("^[0-9]{8}$")) {
-            throw new IllegalArgumentException("Klucz musi mieć długość dokładnie 8 bajtów (składać się z 8 cyfr)");
+            throw new IllegalArgumentException("Klucz musi mieć długość dokładnie 8 bajtów (składać się z 8 cyfr). Aktualny klucz: " + key);
         }
     }
 
@@ -77,7 +77,7 @@ public class DES {
 
         for (byte b : key) {
             if (b < 48 || b > 57) {
-                throw new IllegalArgumentException("Klucz musi składać się z samych cyfr");
+                throw new IllegalArgumentException("Klucz musi składać się z samych cyfr. Aktualny klucz: " + new String(key));
             }
         }
     }

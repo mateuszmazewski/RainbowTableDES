@@ -21,9 +21,9 @@ public class RainbowTable {
 
     // TODO: remove passwordLength and chainLength?
     public RainbowTable(int passwordLength, int chainLength, String plaintext) {
-        this.byteset = new byte[256];
-        for (int i = 0; i < 256; i++) {
-            byteset[i] = (byte) i;
+        this.byteset = new byte[10];
+        for (int i = 0; i < byteset.length; i++) {
+            byteset[i] = (byte) (i + 48);
         }
 
         this.passwordLength = passwordLength;

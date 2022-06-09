@@ -256,6 +256,14 @@ public class Main {
         if (argNThreads != null && !argNThreads.isEmpty()) {
             nThreads = parseNumberString(argNThreads, NumberArgType.nThreads);
         }
+
+        RainbowTable rainbowTable = new RainbowTableVerbose(8, chainLength, argPassword);
+        try {
+            rainbowTable.generate(nChains, nThreads);
+            rainbowTable.saveTableToFile(argFile);
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     private void crack(String argFile, String argCipherText, String argNThreads) {
