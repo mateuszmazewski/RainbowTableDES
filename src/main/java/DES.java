@@ -28,11 +28,31 @@ public class DES {
         }
     }
 
+    public void initializeEncryptor(byte[] key) {
+        validateKey(key);
+
+        try {
+            encryptor.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "DES"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void initializeDecryptor(String key) {
         validateKey(key);
 
         try {
             decryptor.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getBytes(), "DES"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void initializeDecryptor(byte[] key) {
+        validateKey(key);
+
+        try {
+            decryptor.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "DES"));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -44,6 +64,21 @@ public class DES {
         }
         if (!key.matches("^[0-9]{8}$")) {
             throw new IllegalArgumentException("Klucz musi mieć długość dokładnie 8 bajtów (składać się z 8 cyfr)");
+        }
+    }
+
+    private void validateKey(byte[] key) {
+        if (key == null) {
+            throw new IllegalArgumentException("Klucz nie może być pusty");
+        }
+        if (key.length != 8) {
+            throw new IllegalArgumentException("Klucz musi mieć długość 8 bajtów");
+        }
+
+        for (byte b : key) {
+            if (b < 48 || b > 57) {
+                throw new IllegalArgumentException("Klucz musi składać się z samych cyfr");
+            }
         }
     }
 

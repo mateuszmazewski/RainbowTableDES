@@ -86,7 +86,7 @@ public class RainbowTable {
         byte[] endKey = startKey;
 
         for (int i = 0; i < chainLength; i++) {
-            des.initializeEncryptor(new String(endKey));
+            des.initializeEncryptor(endKey);
             cryptogram = des.encrypt(plaintext);
             endKey = reduce(cryptogram, i);
         }
@@ -143,7 +143,7 @@ public class RainbowTable {
 
             for (int j = i; j < chainLength; j++) {
                 endKey = reduce(cryptogram, j);
-                des.initializeEncryptor(new String(endKey));
+                des.initializeEncryptor(endKey);
                 cryptogram = des.encrypt(plaintext);
             }
 
@@ -163,7 +163,7 @@ public class RainbowTable {
         byte[] key = startKey, lookup = null;
 
         for (int j = 0; j < chainLength; j++) {
-            des.initializeEncryptor(new String(key));
+            des.initializeEncryptor(key);
             cryptogram = des.encrypt(plaintext);
 
             if (cryptogram.equals(cryptogramToFind)) {
