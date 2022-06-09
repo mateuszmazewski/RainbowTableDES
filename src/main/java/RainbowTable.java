@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RainbowTable {
     private final byte[] byteset;
     private final int passwordLength;
-    private final int chainLength;
-    private final String plaintext;
+    private int chainLength;
+    private String plaintext;
     private final BigInteger modulo;
     private Map<byte[], byte[]> table; // <K, V> == <endKey, startKey>
     private final Object addLock;
@@ -117,6 +117,9 @@ public class RainbowTable {
 
         try {
             fw = new FileWriter(out);
+
+            fw.write("chainLength=" + chainLength + "\n");
+            fw.write("plaintext=" + plaintext + "\n");
             for (Map.Entry<byte[], byte[]> entry : table.entrySet()) {
                 fw.write(Arrays.toString(entry.getKey())); // endKey
                 fw.write("#");
@@ -151,6 +154,28 @@ public class RainbowTable {
         byte[] startKey;
 
         try {
+            line = reader.readLine();
+            nLines++;
+            if (line != null && line.startsWith("chainLength")) {
+                line = line.replace("chainLength=", "");
+                try {
+                    chainLength = Integer.parseInt(line);
+                } catch (NumberFormatException e) {
+                    System.err.println("Błędny format długości łańcucha w pliku");
+                    return false;
+                }
+            }
+
+            line = reader.readLine();
+            nLines++;
+            if (line != null && line.startsWith("plaintext")) {
+                plaintext = line.replace("plaintext=", "");
+            } else {
+                System.err.println("Nie udało się wczytać tekstu jawnego z pliku");
+                return false;
+            }
+
+
             while ((line = reader.readLine()) != null) {
                 endKey = new byte[8];
                 startKey = new byte[8];
@@ -165,10 +190,16 @@ public class RainbowTable {
                 arrays[1] = arrays[1].replace("[", "").replace("]", "");
 
                 splittedArray = arrays[0].split(", ");
+                if (splittedArray.length != 8) {
+                    throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
+                }
                 for (int i = 0; i < 8; i++) {
                     endKey[i] = Byte.parseByte(splittedArray[i]);
                 }
                 splittedArray = arrays[1].split(", ");
+                if (splittedArray.length != 8) {
+                    throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
+                }
                 for (int i = 0; i < 8; i++) {
                     startKey[i] = Byte.parseByte(splittedArray[i]);
                 }
@@ -180,9 +211,6 @@ public class RainbowTable {
             return false;
         } catch (NumberFormatException nfe) {
             System.err.println("Błąd podczas przetwarzania danych z pliku, linia " + nLines + ": " + nfe.getMessage());
-            return false;
-        } catch (IndexOutOfBoundsException ioobe) {
-            System.err.println("Błędna długość klucza w pliku, linia " + nLines);
             return false;
         } catch (RuntimeException re) {
             System.err.println(re.getMessage());
@@ -240,4 +268,11 @@ public class RainbowTable {
         return table.size();
     }
 
+    public String getPlaintext() {
+        return plaintext;
+    }
+
+    public int getChainLength() {
+        return chainLength;
+    }
 }

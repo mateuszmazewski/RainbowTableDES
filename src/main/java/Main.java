@@ -278,7 +278,7 @@ public class Main {
         RainbowTable rainbowTable = new RainbowTableVerbose(8, 6, "asfd");
         boolean success = rainbowTable.readTableFromFile(argFile);
         if (success) {
-            System.out.println("Wczytano tablicę: " + rainbowTable.getTableSize() + " łańcuchów");
+            System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize() + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
         } else {
             System.err.println("Nie udało się wczytać tablicy tęczowej z pliku \"" + argFile + "\"");
         }
