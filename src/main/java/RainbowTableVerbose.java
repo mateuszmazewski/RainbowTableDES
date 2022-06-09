@@ -47,10 +47,10 @@ public class RainbowTableVerbose extends RainbowTable {
     }
 
     @Override
-    public byte[] lookup(String cryptogramToCrack) {
+    public byte[] lookup(DES des, String cryptogramToCrack) {
         long timeMillis = System.currentTimeMillis();
 
-        byte[] result = super.lookup(cryptogramToCrack);
+        byte[] result = super.lookup(des, cryptogramToCrack);
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;

@@ -1,9 +1,6 @@
 import keygenerators.IncrementalKeyGenerator;
 import keygenerators.KeyGenerator;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -38,13 +35,14 @@ public class RainbowTable {
     }
 
     protected void generationThread(int numChains, int threadId, int threadCount) {
+        DES des = new DES(); // thread's private DES instance -- in order not to mix keys in one shared DES instance
         KeyGenerator keyGenerator = new IncrementalKeyGenerator(byteset, threadId);
         byte[] startKey, endKey;
         boolean done = false;
 
         while (!done) {
             startKey = keyGenerator.next((long) threadCount);
-            endKey = generateChain(startKey);
+            endKey = generateChain(des, startKey);
 
             // If endKey is already in the table -> there was a collision in the chain
             // We cannot save it because map holds unique keys
@@ -83,22 +81,17 @@ public class RainbowTable {
         generationThread(numChains, 0, 1);
     }
 
-    private byte[] generateChain(byte[] startKey) {
+    private byte[] generateChain(DES des, byte[] startKey) {
         String cryptogram;
         byte[] endKey = startKey;
 
-        try {
-            for (int i = 0; i < chainLength; i++) {
-                cryptogram = new DES(new SecretKeySpec(endKey, "DES")).encrypt(plaintext);
-                endKey = reduce(cryptogram, i);
-            }
-
-            return endKey;
-        } catch (BadPaddingException | IllegalBlockSizeException e) {
-            e.printStackTrace();
+        for (int i = 0; i < chainLength; i++) {
+            des.initializeEncryptor(new String(endKey));
+            cryptogram = des.encrypt(plaintext);
+            endKey = reduce(cryptogram, i);
         }
 
-        return null;
+        return endKey;
     }
 
     private byte[] reduce(String cryptogram, int position) {
@@ -140,7 +133,7 @@ public class RainbowTable {
         return timeMillis / 1000.0;
     }
 
-    public byte[] lookup(String cryptogramToCrack) {
+    public byte[] lookup(DES des, String cryptogramToCrack) {
         String cryptogram;
         byte[] endKey = null, lookup = null;
 
@@ -148,17 +141,14 @@ public class RainbowTable {
         for (int i = chainLength - 1; i >= 0; i--) {
             cryptogram = cryptogramToCrack;
 
-            try {
-                for (int j = i; j < chainLength; j++) {
-                    endKey = reduce(cryptogram, j);
-                    cryptogram = new DES(new SecretKeySpec(endKey, "DES")).encrypt(plaintext);
-                }
-            } catch (BadPaddingException | IllegalBlockSizeException e) {
-                e.printStackTrace();
+            for (int j = i; j < chainLength; j++) {
+                endKey = reduce(cryptogram, j);
+                des.initializeEncryptor(new String(endKey));
+                cryptogram = des.encrypt(plaintext);
             }
 
             if (endKey != null && table.containsKey(endKey)) {
-                lookup = lookupChain(table.get(endKey), cryptogramToCrack);
+                lookup = lookupChain(des, table.get(endKey), cryptogramToCrack);
                 if (lookup != null) {
                     break;
                 }
@@ -168,23 +158,20 @@ public class RainbowTable {
         return lookup;
     }
 
-    private byte[] lookupChain(byte[] startKey, String cryptogramToFind) {
+    private byte[] lookupChain(DES des, byte[] startKey, String cryptogramToFind) {
         String cryptogram;
         byte[] key = startKey, lookup = null;
 
-        try {
-            for (int j = 0; j < chainLength; j++) {
-                cryptogram = new DES(new SecretKeySpec(key, "DES")).encrypt(plaintext);
+        for (int j = 0; j < chainLength; j++) {
+            des.initializeEncryptor(new String(key));
+            cryptogram = des.encrypt(plaintext);
 
-                if (cryptogram.equals(cryptogramToFind)) {
-                    lookup = key;
-                    break;
-                }
-
-                key = reduce(cryptogram, j);
+            if (cryptogram.equals(cryptogramToFind)) {
+                lookup = key;
+                break;
             }
-        } catch (BadPaddingException | IllegalBlockSizeException e) {
-            e.printStackTrace();
+
+            key = reduce(cryptogram, j);
         }
 
         return lookup;
