@@ -14,7 +14,7 @@ public class RainbowTableVerbose extends RainbowTable {
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;
-        System.out.println("Table-generating thread finished in " + seconds + "s");
+        System.out.println("Wątek " + threadId + " skończył w " + seconds + "s");
     }
 
     @Override
@@ -25,7 +25,7 @@ public class RainbowTableVerbose extends RainbowTable {
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;
-        System.out.println("Table generated in " + seconds + "s");
+        System.out.println("Generowanie tablicy zakończone w " + seconds + "s");
     }
 
     @Override
@@ -36,7 +36,7 @@ public class RainbowTableVerbose extends RainbowTable {
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;
-        System.out.println("Table generated in " + seconds + "s");
+        System.out.println("Generowanie tablicy zakończone w " + seconds + "s");
     }
 
     @Override
@@ -54,7 +54,7 @@ public class RainbowTableVerbose extends RainbowTable {
 
         timeMillis = System.currentTimeMillis() - timeMillis;
         double seconds = timeMillis / 1000.0;
-        System.out.println("Lookup took " + seconds + "s");
+        System.out.println("Przeszukiwanie tablicy zakończone w " + seconds + "s");
         return result;
     }
 }
