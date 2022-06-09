@@ -124,13 +124,16 @@ public class Main {
 
         /*
         String charset = "abctajxyzne";
-        int passwordLength = 5;
+        int passwordLength = 8;
         int chainLength = 1000;
         int numChains = 140; // set by trial and error, higher values may cause infinite(?) generation
         String pathname = "table.txt";
         DES des = new DES();
 
-        RainbowTable rainbowTable = new RainbowTableVerbose(charset, passwordLength, chainLength, des);
+        byte[] secretKey = new byte[] {1, 2, 3, 4, 5, 6, 7, 8};
+        DES des = new DES(new SecretKeySpec(secretKey, "DES"));
+
+        RainbowTable rainbowTable = new RainbowTableVerbose(passwordLength, chainLength, "tajne");
         String s = "Starting rainbow table generation:\n" +
                 "password length: " + passwordLength + "\n" +
                 "charset: " + charset + "\n" +
@@ -144,13 +147,14 @@ public class Main {
         double saveSeconds = rainbowTable.saveTableToFile(pathname);
         System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s\n");
 
-        String cipherTextToCrack, foundPass;
+        String cipherTextToCrack;
+        byte[] foundKey;
 
         try {
             cipherTextToCrack = des.encrypt("tajne");
-            foundPass = rainbowTable.lookup(cipherTextToCrack);
-            if (foundPass != null) {
-                System.out.println("For cipherText: " + cipherTextToCrack + " found password: " + foundPass);
+            foundKey = rainbowTable.lookup(cipherTextToCrack);
+            if (foundKey != null) {
+                System.out.println("For cipherText: " + cipherTextToCrack + " found key: " + Arrays.toString(foundKey));
             } else {
                 System.out.println("Rainbow table doesn't contain the password for given cipherText: " + cipherTextToCrack);
             }
