@@ -6,6 +6,9 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class RainbowTable {
     private final byte[] byteset;
@@ -70,9 +73,17 @@ public class RainbowTable {
             threads[i].start();
         }
 
+        ScheduledExecutorService progressExecutor = Executors.newSingleThreadScheduledExecutor();
+        progressExecutor.scheduleAtFixedRate(() -> {
+            double progressPercent = (double) generatedChains / (numChains) * 100;
+            System.out.println("Postęp generowania: " + String.format("%.2f", progressPercent) + "%");
+        }, 10000, 10000, TimeUnit.MILLISECONDS);
+
         for (Thread t : threads) {
             t.join();
         }
+
+        progressExecutor.shutdownNow();
     }
 
     public void generate(int numChains) {

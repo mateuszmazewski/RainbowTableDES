@@ -3,6 +3,9 @@ import org.apache.commons.cli.*;
 public class Main {
     private static final CommandLineParser parser = new DefaultParser();
     private static final HelpFormatter formatter = new HelpFormatter();
+    private static final int MAX_CHAIN_LENGTH = 1000000;
+    private static final int MAX_N_CHAINS = 100000000;
+    private static final int MAX_N_THREADS = 1024;
 
     private enum NumberArgType {
         chainLength,
@@ -184,23 +187,27 @@ public class Main {
 
     private int parseNumberString(String numberString, NumberArgType type) {
         int number = Integer.MAX_VALUE;
+        boolean numberOutOfRange = false;
 
         try {
             number = Integer.parseInt(numberString);
             switch (type) {
                 case chainLength:
-                    if (number < 1 || number > 100000) {
-                        System.err.println("Długość łańcucha musi być pomiędzy 1 a 100000");
+                    if (number < 1 || number > MAX_CHAIN_LENGTH) {
+                        System.err.println("Długość łańcucha musi być pomiędzy 1 a " + MAX_CHAIN_LENGTH);
+                        numberOutOfRange = true;
                     }
                     break;
                 case nChains:
-                    if (number < 1 || number > 100000) {
-                        System.err.println("Liczba łańcuchów musi być pomiędzy 1 a 100000");
+                    if (number < 1 || number > MAX_N_CHAINS) {
+                        System.err.println("Liczba łańcuchów musi być pomiędzy 1 a " + MAX_N_CHAINS);
+                        numberOutOfRange = true;
                     }
                     break;
                 case nThreads:
-                    if (number < 1 || number > 1024) {
-                        System.err.println("Liczba wątków musi być pomiędzy 1 a 1024");
+                    if (number < 1 || number > MAX_N_THREADS) {
+                        System.err.println("Liczba wątków musi być pomiędzy 1 a " + MAX_N_THREADS);
+                        numberOutOfRange = true;
                     }
                     break;
             }
@@ -208,7 +215,7 @@ public class Main {
             System.err.println("Błędny format liczby " + type);
         }
 
-        if (number == Integer.MAX_VALUE) {
+        if (number == Integer.MAX_VALUE || numberOutOfRange) {
             System.exit(-1);
         }
 
@@ -278,7 +285,15 @@ public class Main {
         RainbowTable rainbowTable = new RainbowTableVerbose(8, 6, "asfd");
         boolean success = rainbowTable.readTableFromFile(argFile);
         if (success) {
-            System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize() + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
+            System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize()
+                    + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
+
+            byte[] foundKey = rainbowTable.lookup(new DES(), argCipherText);
+            if (foundKey != null) {
+                System.out.println("Znaleziono klucz: " + new String(foundKey));
+            } else {
+                System.out.println("Nie znaleziono klucza");
+            }
         } else {
             System.err.println("Nie udało się wczytać tablicy tęczowej z pliku \"" + argFile + "\"");
         }
