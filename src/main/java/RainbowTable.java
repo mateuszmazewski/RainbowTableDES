@@ -4,12 +4,12 @@ import keygenerators.KeyGenerator;
 import java.io.*;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RainbowTable {
+    private final static int LOOKUP_TIMEOUT_SECS = 3600;
+
     private final byte[] byteset;
     private final int passwordLength;
     private final int chainLength;
@@ -17,6 +17,7 @@ public class RainbowTable {
     private final BigInteger modulo;
     private Map<ByteArrayWrapper, ByteArrayWrapper> table; // <K, V> == <endKey, startKey>
     private final Object addLock;
+    private final Object lookupLock;
 
     public RainbowTable(int passwordLength, int chainLength, String plaintext) {
         this.byteset = new byte[10];
@@ -30,6 +31,7 @@ public class RainbowTable {
 
         this.modulo = getPrimeModulus();
         this.addLock = new Object();
+        this.lookupLock = new Object();
     }
 
     protected RainbowTable(int passwordLength, int chainLength, String plaintext, Map<ByteArrayWrapper, ByteArrayWrapper> table) {
@@ -207,30 +209,62 @@ public class RainbowTable {
         return new RainbowTable(8, chainLength, plaintext, table);
     }
 
-    public byte[] lookup(DES des, String cryptogramToCrack) {
-        String cryptogram;
-        byte[] endKey = null, lookup = null;
+    public byte[] lookup(String ciphertext) {
+        return lookup(ciphertext, 1);
+    }
 
-        // Start from the last reduction function
-        for (int i = chainLength - 1; i >= 0; i--) {
-            cryptogram = cryptogramToCrack;
+    public byte[] lookup(String cryptogramToCrack, int threadCount) {
+        ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+        DES[] deses = new DES[threadCount]; // Separate instance for each thread
+        Runnable[] tasks = new Runnable[table.size()];
+        int chainNumber = 0;
+        AtomicInteger lookedChainsAtomic = new AtomicInteger();
+        final byte[][] foundKey = new byte[1][1]; // Array of byte[] because it needs to be final in order to access it from lambda expression
+        foundKey[0] = null;
 
-            for (int j = i; j < chainLength; j++) {
-                endKey = reduce(cryptogram, j);
-                des.initializeEncryptor(endKey);
-                cryptogram = des.encrypt(plaintext);
-            }
-
-            ByteArrayWrapper endKeyWrapped = new ByteArrayWrapper(endKey);
-            if (endKey != null && table.containsKey(endKeyWrapped)) {
-                lookup = lookupChain(des, table.get(endKeyWrapped).get(), cryptogramToCrack);
-                if (lookup != null) {
-                    break;
-                }
-            }
+        for (int i = 0; i < threadCount; i++) {
+            deses[i] = new DES();
         }
 
-        return lookup;
+        for (ByteArrayWrapper startKey : table.values()) {
+            tasks[chainNumber] = () -> {
+                int threadId = (int) Thread.currentThread().getId() % threadCount;
+                byte[] lookup = lookupChain(deses[threadId], startKey.get(), cryptogramToCrack);
+                if (lookup != null) {
+                    synchronized (lookupLock) {
+                        foundKey[0] = lookup;
+                        pool.shutdownNow();
+                    }
+                }
+
+                lookedChainsAtomic.getAndIncrement();
+            };
+            chainNumber++;
+        }
+
+        ScheduledExecutorService progressExecutor = Executors.newSingleThreadScheduledExecutor();
+        progressExecutor.scheduleAtFixedRate(() -> {
+            double progressPercent = (double) lookedChainsAtomic.get() / (table.size()) * 100;
+            System.out.println("Przeszukano: " + String.format("%.2f", progressPercent) + "%");
+        }, 1000, 1000, TimeUnit.MILLISECONDS);
+
+        for (Runnable task : tasks) {
+            pool.execute(task);
+        }
+        pool.shutdown(); // Execute all initiated tasks and shutdown the pool
+
+        try {
+            boolean terminatedSuccessfully = pool.awaitTermination(LOOKUP_TIMEOUT_SECS, TimeUnit.SECONDS);
+            if (!terminatedSuccessfully) {
+                System.out.println("Przekroczono maksymalny czas przeszukiwania: " + LOOKUP_TIMEOUT_SECS + "s");
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        progressExecutor.shutdownNow();
+
+        return foundKey[0];
     }
 
     private byte[] lookupChain(DES des, byte[] startKey, String cryptogramToFind) {
