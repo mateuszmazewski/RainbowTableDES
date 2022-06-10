@@ -4,7 +4,9 @@ import keygenerators.KeyGenerator;
 import java.io.*;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -147,7 +149,7 @@ public class RainbowTable {
     }
 
     public boolean readTableFromFile(String pathname) {
-        table = new ConcurrentHashMap<>();
+        table = new TreeMap<>(new ByteArrayComparator());
         BufferedReader reader;
         int nLines = 0;
 
@@ -285,5 +287,12 @@ public class RainbowTable {
 
     public int getChainLength() {
         return chainLength;
+    }
+
+    private static class ByteArrayComparator implements Comparator<byte[]> {
+        @Override
+        public int compare(byte[] a, byte[] b) {
+            return Arrays.compare(a, b);
+        }
     }
 }
