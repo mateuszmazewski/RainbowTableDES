@@ -50,13 +50,6 @@ public class RainbowTableVerbose extends RainbowTable {
     }
 
     @Override
-    protected BigInteger getModulus() {
-        BigInteger modulus = super.getModulus();
-        System.out.println("modulus: " + modulus);
-        return modulus;
-    }
-
-    @Override
     public byte[] lookup(String cryptogramToCrack) {
         long timeMillis = System.currentTimeMillis();
 
