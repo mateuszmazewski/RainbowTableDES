@@ -187,7 +187,7 @@ public class Main {
 
         if (secretKey == null || secretKey.isEmpty()) {
             secretKey = DES.generateRandomKey();
-            System.out.println("Wygenerowano losowy klucz: " + secretKey);
+            System.out.println("Do zaszyfrowania użyto losowego klucza: " + secretKey);
         }
 
         DES des = new DES();
