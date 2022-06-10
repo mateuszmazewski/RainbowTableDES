@@ -17,7 +17,6 @@ public class RainbowTable {
     private final BigInteger modulo;
     private Map<ByteArrayWrapper, ByteArrayWrapper> table; // <K, V> == <endKey, startKey>
     private final Object addLock;
-    private int generatedChains;
 
     public RainbowTable(int passwordLength, int chainLength, String plaintext) {
         this.byteset = new byte[10];
@@ -48,17 +47,11 @@ public class RainbowTable {
             startKey = keyGenerator.next((long) threadCount);
             endKey = generateChain(des, startKey);
 
-            // If endKey is already in the table -> there was a collision in the chain
-            // We cannot save it because map holds unique keys
             synchronized (addLock) {
-                if (generatedChains < numChains) {
-                    ByteArrayWrapper endKeyWrapped = new ByteArrayWrapper(endKey);
-                    if (!table.containsKey(endKeyWrapped)) {
-                        table.put(endKeyWrapped, new ByteArrayWrapper(startKey));
-                        generatedChains++;
-                    }
+                if (table.size() < numChains) {
+                    table.put(new ByteArrayWrapper(endKey), new ByteArrayWrapper(startKey));
                 }
-                if (generatedChains >= numChains) {
+                if (table.size() >= numChains) {
                     done = true;
                 }
             }
@@ -69,7 +62,6 @@ public class RainbowTable {
         Thread[] threads = new Thread[threadCount];
 
         table = new ConcurrentHashMap<>(numChains);
-        generatedChains = 0;
 
         for (int i = 0; i < threadCount; i++) {
             int finalI = i;
@@ -79,7 +71,7 @@ public class RainbowTable {
 
         ScheduledExecutorService progressExecutor = Executors.newSingleThreadScheduledExecutor();
         progressExecutor.scheduleAtFixedRate(() -> {
-            double progressPercent = (double) generatedChains / (numChains) * 100;
+            double progressPercent = (double) table.size() / (numChains) * 100;
             System.out.println("Postęp generowania: " + String.format("%.2f", progressPercent) + "%");
         }, 10000, 10000, TimeUnit.MILLISECONDS);
 
