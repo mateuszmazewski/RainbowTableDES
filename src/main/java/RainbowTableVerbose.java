@@ -8,7 +8,7 @@ public class RainbowTableVerbose extends RainbowTable {
         super(passwordLength, chainLength, plaintext);
     }
 
-    protected RainbowTableVerbose(int passwordLength, int chainLength, String plaintext, Map<byte[], byte[]> table) {
+    protected RainbowTableVerbose(int passwordLength, int chainLength, String plaintext, Map<ByteArrayWrapper, ByteArrayWrapper> table) {
         super(passwordLength, chainLength, plaintext, table);
     }
 

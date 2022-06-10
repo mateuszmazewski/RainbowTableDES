@@ -3,10 +3,7 @@ import keygenerators.KeyGenerator;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -18,7 +15,7 @@ public class RainbowTable {
     private final int chainLength;
     private final String plaintext;
     private final BigInteger modulo;
-    private Map<byte[], byte[]> table; // <K, V> == <endKey, startKey>
+    private Map<ByteArrayWrapper, ByteArrayWrapper> table; // <K, V> == <endKey, startKey>
     private final Object addLock;
     private int generatedChains;
 
@@ -36,7 +33,7 @@ public class RainbowTable {
         this.addLock = new Object();
     }
 
-    protected RainbowTable(int passwordLength, int chainLength, String plaintext, Map<byte[], byte[]> table) {
+    protected RainbowTable(int passwordLength, int chainLength, String plaintext, Map<ByteArrayWrapper, ByteArrayWrapper> table) {
         this(passwordLength, chainLength, plaintext);
         this.table = table;
     }
@@ -55,8 +52,9 @@ public class RainbowTable {
             // We cannot save it because map holds unique keys
             synchronized (addLock) {
                 if (generatedChains < numChains) {
-                    if (!table.containsKey(endKey)) {
-                        table.put(endKey, startKey);
+                    ByteArrayWrapper endKeyWrapped = new ByteArrayWrapper(endKey);
+                    if (!table.containsKey(endKeyWrapped)) {
+                        table.put(endKeyWrapped, new ByteArrayWrapper(startKey));
                         generatedChains++;
                     }
                 }
@@ -136,10 +134,10 @@ public class RainbowTable {
 
             fw.write("chainLength=" + chainLength + "\n");
             fw.write("plaintext=" + plaintext + "\n");
-            for (Map.Entry<byte[], byte[]> entry : table.entrySet()) {
-                fw.write(Arrays.toString(entry.getKey())); // endKey
+            for (Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry : table.entrySet()) {
+                fw.write(Arrays.toString(entry.getKey().get())); // endKey
                 fw.write("#");
-                fw.write(Arrays.toString(entry.getValue())); // startKey
+                fw.write(Arrays.toString(entry.getValue().get())); // startKey
                 fw.write("\n");
             }
             fw.close();
@@ -149,8 +147,8 @@ public class RainbowTable {
     }
 
     public static RainbowTable readFromFile(String pathname) throws IOException {
-        // NOTE: TreeMap is not thread-safe, write with one thread only
-        Map<byte[], byte[]> table = new TreeMap<>(new ByteArrayComparator());
+        // NOTE: not thread-safe, write with one thread only
+        Map<ByteArrayWrapper, ByteArrayWrapper> table = new HashMap<>();
         BufferedReader reader;
         int nLines = 0;
         Integer chainLength = null;
@@ -207,7 +205,7 @@ public class RainbowTable {
                 startKey[i] = Byte.parseByte(splittedArray[i]);
             }
 
-            table.put(endKey, startKey);
+            table.put(new ByteArrayWrapper(endKey), new ByteArrayWrapper(startKey));
         }
 
         if (chainLength == null) {
@@ -231,8 +229,9 @@ public class RainbowTable {
                 cryptogram = des.encrypt(plaintext);
             }
 
-            if (endKey != null && table.containsKey(endKey)) {
-                lookup = lookupChain(des, table.get(endKey), cryptogramToCrack);
+            ByteArrayWrapper endKeyWrapped = new ByteArrayWrapper(endKey);
+            if (endKey != null && table.containsKey(endKeyWrapped)) {
+                lookup = lookupChain(des, table.get(endKeyWrapped).get(), cryptogramToCrack);
                 if (lookup != null) {
                     break;
                 }
@@ -277,14 +276,8 @@ public class RainbowTable {
         return passwordLength;
     }
 
-    protected Map<byte[], byte[]> getTable() {
+    protected Map<ByteArrayWrapper, ByteArrayWrapper> getTable() {
         return table;
     }
 
-    private static class ByteArrayComparator implements Comparator<byte[]> {
-        @Override
-        public int compare(byte[] a, byte[] b) {
-            return Arrays.compare(a, b);
-        }
-    }
 }
