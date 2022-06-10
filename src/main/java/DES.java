@@ -14,7 +14,7 @@ public class DES {
             encryptor = Cipher.getInstance(ALG_MODE_PADDING);
             decryptor = Cipher.getInstance(ALG_MODE_PADDING);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Błąd podczas inicjowania algorytmu DES");
         }
     }
 
@@ -24,7 +24,7 @@ public class DES {
         try {
             encryptor.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getBytes(), "DES"));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Błąd podczas inicjowania szyfratora kluczem");
         }
     }
 
@@ -34,7 +34,7 @@ public class DES {
         try {
             encryptor.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "DES"));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Błąd podczas inicjowania szyfratora kluczem");
         }
     }
 
@@ -44,7 +44,7 @@ public class DES {
         try {
             decryptor.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getBytes(), "DES"));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Błąd podczas inicjowania deszyfratora kluczem");
         }
     }
 
@@ -54,7 +54,7 @@ public class DES {
         try {
             decryptor.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "DES"));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Błąd podczas inicjowania deszyfratora kluczem");
         }
     }
 
@@ -88,7 +88,7 @@ public class DES {
         try {
             hexCipherText = Hex.toHex(encryptor.doFinal(plainText.getBytes()));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Nie udało się zaszyfrować");
         }
 
         return hexCipherText;
@@ -100,7 +100,7 @@ public class DES {
         try {
             hexPlainText = Hex.toHex(decryptor.doFinal(Hex.hexStringToByteArray(cipherText)));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Nie udało się zdeszyfrować");
         }
 
         return hexPlainText;

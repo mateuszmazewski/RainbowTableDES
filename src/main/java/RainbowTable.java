@@ -134,7 +134,7 @@ public class RainbowTable {
             }
             fw.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Błąd podczas zapisywania do pliku: " + e.getMessage());
         }
     }
 
@@ -243,7 +243,7 @@ public class RainbowTable {
                 System.out.println("Przekroczono maksymalny czas przeszukiwania: " + LOOKUP_TIMEOUT_SECS + "s");
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            System.err.println("Przerwano przeszukiwanie tablicy");
         }
 
         progressExecutor.shutdownNow();

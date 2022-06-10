@@ -78,7 +78,7 @@ public class Main {
                 try {
                     main.decrypt(argCipherText, argSecretKey);
                 } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
+                    System.err.println(e.getMessage());
                 }
                 break;
             case "generate":
@@ -243,12 +243,12 @@ public class Main {
         try {
             rainbowTable = RainbowTableVerbose.readFromFile(argFile);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Błąd podczas wczytywania tablicy z pliku: " + e.getMessage());
             return;
         }
 
         System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize()
-            + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
+                + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
 
         byte[] foundKey = rainbowTable.lookup(argCipherText, nThreads);
         if (foundKey != null) {
