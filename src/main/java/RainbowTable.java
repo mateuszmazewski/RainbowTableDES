@@ -17,7 +17,6 @@ public class RainbowTable {
     private final BigInteger modulo;
     private Map<ByteArrayWrapper, ByteArrayWrapper> table; // <K, V> == <endKey, startKey>
     private final Object addLock;
-    private final Object lookupLock;
 
     public RainbowTable(int passwordLength, int chainLength, String plaintext) {
         this.byteset = new byte[10];
@@ -31,7 +30,6 @@ public class RainbowTable {
 
         this.modulo = getPrimeModulus();
         this.addLock = new Object();
-        this.lookupLock = new Object();
     }
 
     protected RainbowTable(int passwordLength, int chainLength, String plaintext, Map<ByteArrayWrapper, ByteArrayWrapper> table) {
@@ -219,7 +217,7 @@ public class RainbowTable {
         Runnable[] tasks = new Runnable[table.size()];
         int chainNumber = 0;
         AtomicInteger lookedChainsAtomic = new AtomicInteger();
-        final byte[][] foundKey = new byte[1][1]; // Array of byte[] because it needs to be final in order to access it from lambda expression
+        final byte[][] foundKey = new byte[1][]; // Array of byte[] because it needs to be final in order to access it from lambda expression
         foundKey[0] = null;
 
         for (int i = 0; i < threadCount; i++) {
@@ -231,10 +229,8 @@ public class RainbowTable {
                 int threadId = (int) Thread.currentThread().getId() % threadCount;
                 byte[] lookup = lookupChain(deses[threadId], startKey.get(), cryptogramToCrack);
                 if (lookup != null) {
-                    synchronized (lookupLock) {
-                        foundKey[0] = lookup;
-                        pool.shutdownNow();
-                    }
+                    foundKey[0] = lookup;
+                    pool.shutdownNow();
                 }
 
                 lookedChainsAtomic.getAndIncrement();
