@@ -293,8 +293,7 @@ public class Main {
         System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize()
             + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
 
-        // TODO: zrównoleglić
-        byte[] foundKey = rainbowTable.lookup(new DES(), argCipherText);
+        byte[] foundKey = rainbowTable.lookup(argCipherText, nThreads);
         if (foundKey != null) {
             System.out.println("Znaleziono klucz: " + new String(foundKey));
         } else {
