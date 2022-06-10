@@ -128,7 +128,7 @@ public class RainbowTable {
             fw.write("plaintext=" + plaintext + "\n");
             for (Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry : table.entrySet()) {
                 fw.write(new String(entry.getKey().get())); // endKey
-                fw.write("#");
+                fw.write(" ");
                 fw.write(new String(entry.getValue().get())); // startKey
                 fw.write("\n");
             }
@@ -170,7 +170,7 @@ public class RainbowTable {
 
         while ((line = reader.readLine()) != null) {
             nLines++;
-            keys = line.split("#");
+            keys = line.split(" ");
 
             if (keys.length != 2) {
                 throw new RuntimeException("Niepoprawny format danych, linia " + nLines);
