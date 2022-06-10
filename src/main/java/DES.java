@@ -3,7 +3,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.util.Random;
 
 public class DES {
-    private static final int KEY_LENGTH = 8;
+    public static final int KEY_LENGTH = 8;
     private static final String ALG_MODE_PADDING = "DES/ECB/PKCS5Padding";
     public static final String DES_KEY_CHARSET = "0123456789";
 
@@ -62,8 +62,8 @@ public class DES {
         if (key == null) {
             throw new IllegalArgumentException("Klucz nie może być pusty");
         }
-        if (!key.matches("^[0-9]{8}$")) {
-            throw new IllegalArgumentException("Klucz musi mieć długość dokładnie 8 bajtów (składać się z 8 cyfr). Aktualny klucz: " + key);
+        if (!key.matches("^\\d{" + KEY_LENGTH + "}$")) {
+            throw new IllegalArgumentException("Klucz musi mieć długość dokładnie " + KEY_LENGTH + " bajtów (składać się z " + KEY_LENGTH + " cyfr). Aktualny klucz: " + key);
         }
     }
 
@@ -71,8 +71,8 @@ public class DES {
         if (key == null) {
             throw new IllegalArgumentException("Klucz nie może być pusty");
         }
-        if (key.length != 8) {
-            throw new IllegalArgumentException("Klucz musi mieć długość 8 bajtów");
+        if (key.length != KEY_LENGTH) {
+            throw new IllegalArgumentException("Klucz musi mieć długość " + KEY_LENGTH + " bajtów");
         }
 
         for (byte b : key) {

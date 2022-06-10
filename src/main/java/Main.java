@@ -18,7 +18,7 @@ public class Main {
 
         Options options = new Options();
         Option password = new Option("p", "password", true, "hasło do zaszyfrowania (dowolny ciąg znaków bez spacji)");
-        Option secretKey = new Option("sk", "secretKey", true, "klucz o długości dokładnie 8 bajtów (8 cyfr z zakresu 0-9)");
+        Option secretKey = new Option("sk", "secretKey", true, "klucz o długości dokładnie " + DES.KEY_LENGTH + " bajtów (" + DES.KEY_LENGTH + " cyfr z zakresu 0-9)");
         Option cipherText = new Option("c", "cipherText", true, "kryptogram (zaszyfrowane hasło w postaci szesnastkowej)");
         Option file = new Option("f", "file", true, "nazwa pliku z tablicą tęczową");
         Option chainLength = new Option("cl", "chainLength", true, "liczba kluczy w każdym łańcuchu");
@@ -48,7 +48,7 @@ public class Main {
                 options.addOption(password);
 
                 secretKey.setRequired(false);
-                secretKey.setDescription("[opcjonalne] klucz o długości dokładnie 8 bajtów (8 cyfr z zakresu 0-9), którym ma zostać zaszyfrowane hasło; jeśli nie będzie podany, zostanie wygenerowany losowo");
+                secretKey.setDescription("[opcjonalne] klucz o długości dokładnie " + DES.KEY_LENGTH + " bajtów (" + DES.KEY_LENGTH + " cyfr z zakresu 0-9), którym ma zostać zaszyfrowane hasło; jeśli nie będzie podany, zostanie wygenerowany losowo");
                 options.addOption(secretKey);
 
                 cmd = parseArgs(options, args);
@@ -67,7 +67,7 @@ public class Main {
                 options.addOption(cipherText);
 
                 secretKey.setRequired(true);
-                secretKey.setDescription("klucz o długości dokładnie 8 bajtów (8 cyfr z zakresu 0-9), którym zostało zaszyfrowane hasło");
+                secretKey.setDescription("klucz o długości dokładnie " + DES.KEY_LENGTH + " bajtów (" + DES.KEY_LENGTH + " cyfr z zakresu 0-9), którym zostało zaszyfrowane hasło");
                 options.addOption(secretKey);
 
                 cmd = parseArgs(options, args);
@@ -130,48 +130,6 @@ public class Main {
             default:
                 System.err.println("Nieznany tryb programu. Dostępne tryby: encrypt, decrypt, generate, crack");
         }
-
-        /*
-        String charset = "abctajxyzne";
-        int passwordLength = 8;
-        int chainLength = 1000;
-        int numChains = 140; // set by trial and error, higher values may cause infinite(?) generation
-        String pathname = "table.txt";
-        DES des = new DES();
-
-        byte[] secretKey = new byte[] {1, 2, 3, 4, 5, 6, 7, 8};
-        DES des = new DES(new SecretKeySpec(secretKey, "DES"));
-
-        RainbowTable rainbowTable = new RainbowTableVerbose(passwordLength, chainLength, "tajne");
-        String s = "Starting rainbow table generation:\n" +
-                "password length: " + passwordLength + "\n" +
-                "charset: " + charset + "\n" +
-                "chains: " + numChains + "\n" +
-                "reductions for each chain: " + chainLength + "\n";
-        System.out.println(s);
-
-        try {
-            rainbowTable.generate(numChains, 4);
-        } catch (InterruptedException ignored) {}
-        double saveSeconds = rainbowTable.saveTableToFile(pathname);
-        System.out.println("Table saved to file \"" + pathname + "\" in " + saveSeconds + "s\n");
-
-        String cipherTextToCrack;
-        byte[] foundKey;
-
-        try {
-            cipherTextToCrack = des.encrypt("tajne");
-            foundKey = rainbowTable.lookup(cipherTextToCrack);
-            if (foundKey != null) {
-                System.out.println("For cipherText: " + cipherTextToCrack + " found key: " + Arrays.toString(foundKey));
-            } else {
-                System.out.println("Rainbow table doesn't contain the password for given cipherText: " + cipherTextToCrack);
-            }
-        } catch (BadPaddingException | IllegalBlockSizeException e) {
-            e.printStackTrace();
-        }
-
-         */
     }
 
     private static CommandLine parseArgs(Options options, String[] args) {
@@ -265,7 +223,7 @@ public class Main {
         }
 
         // TODO -- argumenty
-        RainbowTable rainbowTable = new RainbowTableVerbose(8, chainLength, argPassword);
+        RainbowTable rainbowTable = new RainbowTableVerbose(DES.KEY_LENGTH, chainLength, argPassword);
         try {
             rainbowTable.generate(nChains, nThreads);
             rainbowTable.saveToFile(argFile);

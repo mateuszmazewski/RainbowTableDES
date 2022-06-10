@@ -172,8 +172,8 @@ public class RainbowTable {
         }
 
         while ((line = reader.readLine()) != null) {
-            endKey = new byte[8];
-            startKey = new byte[8];
+            endKey = new byte[DES.KEY_LENGTH];
+            startKey = new byte[DES.KEY_LENGTH];
             nLines++;
             arrays = line.split("#");
 
@@ -185,17 +185,17 @@ public class RainbowTable {
             arrays[1] = arrays[1].replace("[", "").replace("]", "");
 
             splittedArray = arrays[0].split(", ");
-            if (splittedArray.length != 8) {
+            if (splittedArray.length != DES.KEY_LENGTH) {
                 throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
             }
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < DES.KEY_LENGTH; i++) {
                 endKey[i] = Byte.parseByte(splittedArray[i]);
             }
             splittedArray = arrays[1].split(", ");
-            if (splittedArray.length != 8) {
+            if (splittedArray.length != DES.KEY_LENGTH) {
                 throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
             }
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < DES.KEY_LENGTH; i++) {
                 startKey[i] = Byte.parseByte(splittedArray[i]);
             }
 
@@ -206,7 +206,7 @@ public class RainbowTable {
             throw new RuntimeException("Nie udało się wczytać długości łańcucha z pliku");
         }
 
-        return new RainbowTable(8, chainLength, plaintext, table);
+        return new RainbowTable(DES.KEY_LENGTH, chainLength, plaintext, table);
     }
 
     public byte[] lookup(String ciphertext) {
