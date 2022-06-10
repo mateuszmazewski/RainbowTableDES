@@ -50,10 +50,10 @@ public class RainbowTableVerbose extends RainbowTable {
     }
 
     @Override
-    protected BigInteger getPrimeModulus() {
-        BigInteger primeModulus = super.getPrimeModulus();
-        System.out.println("prime modulus: " + primeModulus);
-        return primeModulus;
+    protected BigInteger getModulus() {
+        BigInteger modulus = super.getModulus();
+        System.out.println("modulus: " + modulus);
+        return modulus;
     }
 
     @Override
