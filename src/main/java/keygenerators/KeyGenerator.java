@@ -2,7 +2,6 @@ package keygenerators;
 
 public abstract class KeyGenerator {
 
-	// TODO: use 0-255 instead of constructor parameter?
 	protected final byte[] byteset;
 
 	public KeyGenerator() {

@@ -222,7 +222,6 @@ public class Main {
             nThreads = parseNumberString(argNThreads, NumberArgType.nThreads);
         }
 
-        // TODO -- argumenty
         RainbowTable rainbowTable = new RainbowTableVerbose(DES.KEY_LENGTH, chainLength, argPassword);
         try {
             rainbowTable.generate(nChains, nThreads);
