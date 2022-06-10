@@ -127,9 +127,9 @@ public class RainbowTable {
             fw.write("chainLength=" + chainLength + "\n");
             fw.write("plaintext=" + plaintext + "\n");
             for (Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry : table.entrySet()) {
-                fw.write(Arrays.toString(entry.getKey().get())); // endKey
+                fw.write(new String(entry.getKey().get())); // endKey
                 fw.write("#");
-                fw.write(Arrays.toString(entry.getValue().get())); // startKey
+                fw.write(new String(entry.getValue().get())); // startKey
                 fw.write("\n");
             }
             fw.close();
@@ -149,8 +149,7 @@ public class RainbowTable {
         reader = new BufferedReader(new FileReader(pathname));
 
         String line;
-        String[] arrays;
-        String[] splittedArray;
+        String[] keys;
         byte[] endKey;
         byte[] startKey;
 
@@ -170,32 +169,19 @@ public class RainbowTable {
         }
 
         while ((line = reader.readLine()) != null) {
-            endKey = new byte[DES.KEY_LENGTH];
-            startKey = new byte[DES.KEY_LENGTH];
             nLines++;
-            arrays = line.split("#");
+            keys = line.split("#");
 
-            if (arrays.length != 2) {
+            if (keys.length != 2) {
                 throw new RuntimeException("Niepoprawny format danych, linia " + nLines);
             }
 
-            arrays[0] = arrays[0].replace("[", "").replace("]", "");
-            arrays[1] = arrays[1].replace("[", "").replace("]", "");
+            if (keys[0].length() != DES.KEY_LENGTH || keys[1].length() != DES.KEY_LENGTH) {
+                throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
+            }
 
-            splittedArray = arrays[0].split(", ");
-            if (splittedArray.length != DES.KEY_LENGTH) {
-                throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
-            }
-            for (int i = 0; i < DES.KEY_LENGTH; i++) {
-                endKey[i] = Byte.parseByte(splittedArray[i]);
-            }
-            splittedArray = arrays[1].split(", ");
-            if (splittedArray.length != DES.KEY_LENGTH) {
-                throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
-            }
-            for (int i = 0; i < DES.KEY_LENGTH; i++) {
-                startKey[i] = Byte.parseByte(splittedArray[i]);
-            }
+            endKey = keys[0].getBytes();
+            startKey = keys[1].getBytes();
 
             table.put(new ByteArrayWrapper(endKey), new ByteArrayWrapper(startKey));
         }
