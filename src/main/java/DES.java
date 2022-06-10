@@ -89,6 +89,7 @@ public class DES {
             hexCipherText = Hex.toHex(encryptor.doFinal(plainText.getBytes()));
         } catch (Exception e) {
             System.err.println("Nie udało się zaszyfrować");
+            System.exit(-1);
         }
 
         return hexCipherText;
@@ -101,6 +102,7 @@ public class DES {
             hexPlainText = Hex.toHex(decryptor.doFinal(Hex.hexStringToByteArray(cipherText)));
         } catch (Exception e) {
             System.err.println("Nie udało się zdeszyfrować");
+            System.exit(-1);
         }
 
         return hexPlainText;
