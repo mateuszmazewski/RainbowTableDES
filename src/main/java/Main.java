@@ -252,7 +252,7 @@ public class Main {
     private void generate(String argFile, String argChainLength, String argPassword, String argNChains, String argNThreads) {
         int chainLength = 1000;
         int nChains = 1000;
-        int nThreads = 1;
+        int nThreads = Runtime.getRuntime().availableProcessors();
 
         if (argChainLength != null && !argChainLength.isEmpty()) {
             chainLength = parseNumberString(argChainLength, NumberArgType.chainLength);
@@ -275,7 +275,7 @@ public class Main {
     }
 
     private void crack(String argFile, String argCipherText, String argNThreads) {
-        int nThreads = 1;
+        int nThreads = Runtime.getRuntime().availableProcessors();
 
         if (argNThreads != null && !argNThreads.isEmpty()) {
             nThreads = parseNumberString(argNThreads, NumberArgType.nThreads);
@@ -288,6 +288,7 @@ public class Main {
             System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize()
                     + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
 
+            // TODO: zrównoleglić
             byte[] foundKey = rainbowTable.lookup(new DES(), argCipherText);
             if (foundKey != null) {
                 System.out.println("Znaleziono klucz: " + new String(foundKey));
