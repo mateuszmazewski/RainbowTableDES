@@ -268,7 +268,7 @@ public class Main {
         RainbowTable rainbowTable = new RainbowTableVerbose(8, chainLength, argPassword);
         try {
             rainbowTable.generate(nChains, nThreads);
-            rainbowTable.saveTableToFile(argFile);
+            rainbowTable.saveToFile(argFile);
         } catch (InterruptedException e) {
             System.out.println(e.getMessage());
         }
@@ -281,22 +281,24 @@ public class Main {
             nThreads = parseNumberString(argNThreads, NumberArgType.nThreads);
         }
 
-        // TODO -- argumenty
-        RainbowTable rainbowTable = new RainbowTableVerbose(8, 6, "asfd");
-        boolean success = rainbowTable.readTableFromFile(argFile);
-        if (success) {
-            System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize()
-                    + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
+        RainbowTable rainbowTable;
 
-            // TODO: zrównoleglić
-            byte[] foundKey = rainbowTable.lookup(new DES(), argCipherText);
-            if (foundKey != null) {
-                System.out.println("Znaleziono klucz: " + new String(foundKey));
-            } else {
-                System.out.println("Nie znaleziono klucza");
-            }
+        try {
+            rainbowTable = RainbowTableVerbose.readFromFile(argFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        System.out.println("Wczytano tablicę: liczba łańcuchów = " + rainbowTable.getTableSize()
+            + ", długość łańcucha = " + rainbowTable.getChainLength() + ", plaintext = " + rainbowTable.getPlaintext());
+
+        // TODO: zrównoleglić
+        byte[] foundKey = rainbowTable.lookup(new DES(), argCipherText);
+        if (foundKey != null) {
+            System.out.println("Znaleziono klucz: " + new String(foundKey));
         } else {
-            System.err.println("Nie udało się wczytać tablicy tęczowej z pliku \"" + argFile + "\"");
+            System.out.println("Nie znaleziono klucza");
         }
     }
 }

@@ -15,14 +15,13 @@ import java.util.concurrent.TimeUnit;
 public class RainbowTable {
     private final byte[] byteset;
     private final int passwordLength;
-    private int chainLength;
-    private String plaintext;
+    private final int chainLength;
+    private final String plaintext;
     private final BigInteger modulo;
     private Map<byte[], byte[]> table; // <K, V> == <endKey, startKey>
     private final Object addLock;
     private int generatedChains;
 
-    // TODO: remove passwordLength and chainLength?
     public RainbowTable(int passwordLength, int chainLength, String plaintext) {
         this.byteset = new byte[10];
         for (int i = 0; i < byteset.length; i++) {
@@ -35,6 +34,11 @@ public class RainbowTable {
 
         this.modulo = getPrimeModulus();
         this.addLock = new Object();
+    }
+
+    protected RainbowTable(int passwordLength, int chainLength, String plaintext, Map<byte[], byte[]> table) {
+        this(passwordLength, chainLength, plaintext);
+        this.table = table;
     }
 
     protected void generationThread(int numChains, int threadId, int threadCount) {
@@ -119,7 +123,7 @@ public class RainbowTable {
         return BigInteger.valueOf(byteset.length).pow(passwordLength);
     }
 
-    public double saveTableToFile(String pathname) {
+    public double saveToFile(String pathname) {
         if (table == null || table.size() == 0) {
             throw new IllegalStateException("Table not generated");
         }
@@ -148,17 +152,15 @@ public class RainbowTable {
         return timeMillis / 1000.0;
     }
 
-    public boolean readTableFromFile(String pathname) {
-        table = new TreeMap<>(new ByteArrayComparator());
+    public static RainbowTable readFromFile(String pathname) throws IOException {
+        // NOTE: TreeMap is not thread-safe, write with one thread only
+        Map<byte[], byte[]> table = new TreeMap<>(new ByteArrayComparator());
         BufferedReader reader;
         int nLines = 0;
+        Integer chainLength = null;
+        String plaintext;
 
-        try {
-            reader = new BufferedReader(new FileReader(pathname));
-        } catch (FileNotFoundException e) {
-            System.err.println("Plik nie istnieje: \"" + pathname + "\"");
-            return false;
-        }
+        reader = new BufferedReader(new FileReader(pathname));
 
         String line;
         String[] arrays;
@@ -166,71 +168,57 @@ public class RainbowTable {
         byte[] endKey;
         byte[] startKey;
 
-        try {
-            line = reader.readLine();
-            nLines++;
-            if (line != null && line.startsWith("chainLength")) {
-                line = line.replace("chainLength=", "");
-                try {
-                    chainLength = Integer.parseInt(line);
-                } catch (NumberFormatException e) {
-                    System.err.println("Błędny format długości łańcucha w pliku");
-                    return false;
-                }
-            }
-
-            line = reader.readLine();
-            nLines++;
-            if (line != null && line.startsWith("plaintext")) {
-                plaintext = line.replace("plaintext=", "");
-            } else {
-                System.err.println("Nie udało się wczytać tekstu jawnego z pliku");
-                return false;
-            }
-
-
-            while ((line = reader.readLine()) != null) {
-                endKey = new byte[8];
-                startKey = new byte[8];
-                nLines++;
-                arrays = line.split("#");
-
-                if (arrays.length != 2) {
-                    throw new RuntimeException("Niepoprawny format danych, linia " + nLines);
-                }
-
-                arrays[0] = arrays[0].replace("[", "").replace("]", "");
-                arrays[1] = arrays[1].replace("[", "").replace("]", "");
-
-                splittedArray = arrays[0].split(", ");
-                if (splittedArray.length != 8) {
-                    throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
-                }
-                for (int i = 0; i < 8; i++) {
-                    endKey[i] = Byte.parseByte(splittedArray[i]);
-                }
-                splittedArray = arrays[1].split(", ");
-                if (splittedArray.length != 8) {
-                    throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
-                }
-                for (int i = 0; i < 8; i++) {
-                    startKey[i] = Byte.parseByte(splittedArray[i]);
-                }
-
-                table.put(endKey, startKey);
-            }
-        } catch (IOException ioe) {
-            System.err.println("Błąd podczas wczytywania pliku, linia " + nLines + ": " + ioe.getMessage());
-            return false;
-        } catch (NumberFormatException nfe) {
-            System.err.println("Błąd podczas przetwarzania danych z pliku, linia " + nLines + ": " + nfe.getMessage());
-            return false;
-        } catch (RuntimeException re) {
-            System.err.println(re.getMessage());
-            return false;
+        line = reader.readLine();
+        nLines++;
+        if (line != null && line.startsWith("chainLength")) {
+            line = line.replace("chainLength=", "");
+            chainLength = Integer.parseInt(line);
         }
 
-        return true;
+        line = reader.readLine();
+        nLines++;
+        if (line != null && line.startsWith("plaintext")) {
+            plaintext = line.replace("plaintext=", "");
+        } else {
+            throw new RuntimeException("Nie udało się wczytać tekstu jawnego z pliku");
+        }
+
+        while ((line = reader.readLine()) != null) {
+            endKey = new byte[8];
+            startKey = new byte[8];
+            nLines++;
+            arrays = line.split("#");
+
+            if (arrays.length != 2) {
+                throw new RuntimeException("Niepoprawny format danych, linia " + nLines);
+            }
+
+            arrays[0] = arrays[0].replace("[", "").replace("]", "");
+            arrays[1] = arrays[1].replace("[", "").replace("]", "");
+
+            splittedArray = arrays[0].split(", ");
+            if (splittedArray.length != 8) {
+                throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
+            }
+            for (int i = 0; i < 8; i++) {
+                endKey[i] = Byte.parseByte(splittedArray[i]);
+            }
+            splittedArray = arrays[1].split(", ");
+            if (splittedArray.length != 8) {
+                throw new RuntimeException("Błędna długość klucza w pliku, linia " + nLines);
+            }
+            for (int i = 0; i < 8; i++) {
+                startKey[i] = Byte.parseByte(splittedArray[i]);
+            }
+
+            table.put(endKey, startKey);
+        }
+
+        if (chainLength == null) {
+            throw new RuntimeException("Nie udało się wczytać długości łańcucha z pliku");
+        }
+
+        return new RainbowTable(8, chainLength, plaintext, table);
     }
 
     public byte[] lookup(DES des, String cryptogramToCrack) {
@@ -287,6 +275,14 @@ public class RainbowTable {
 
     public int getChainLength() {
         return chainLength;
+    }
+
+    public int getPasswordLength() {
+        return passwordLength;
+    }
+
+    protected Map<byte[], byte[]> getTable() {
+        return table;
     }
 
     private static class ByteArrayComparator implements Comparator<byte[]> {

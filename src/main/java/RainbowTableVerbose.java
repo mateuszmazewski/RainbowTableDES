@@ -1,9 +1,19 @@
+import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Map;
 
 public class RainbowTableVerbose extends RainbowTable {
 
     public RainbowTableVerbose(int passwordLength, int chainLength, String plaintext) {
         super(passwordLength, chainLength, plaintext);
+    }
+
+    protected RainbowTableVerbose(int passwordLength, int chainLength, String plaintext, Map<byte[], byte[]> table) {
+        super(passwordLength, chainLength, plaintext, table);
+    }
+
+    public RainbowTableVerbose(RainbowTable rainbowTable) {
+        this(rainbowTable.getPasswordLength(), rainbowTable.getChainLength(), rainbowTable.getPlaintext(), rainbowTable.getTable());
     }
 
     @Override
@@ -56,5 +66,10 @@ public class RainbowTableVerbose extends RainbowTable {
         double seconds = timeMillis / 1000.0;
         System.out.println("Przeszukiwanie tablicy zakończone w " + seconds + "s");
         return result;
+    }
+
+    public static RainbowTable readFromFile(String pathname) throws IOException {
+        RainbowTable rainbowTable = RainbowTable.readFromFile(pathname);
+        return new RainbowTableVerbose(rainbowTable);
     }
 }
