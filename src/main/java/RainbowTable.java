@@ -28,7 +28,7 @@ public class RainbowTable {
         this.chainLength = chainLength;
         this.plaintext = plaintext;
 
-        this.modulo = getPrimeModulus();
+        this.modulo = getModulus();
         this.addLock = new Object();
     }
 
@@ -109,7 +109,7 @@ public class RainbowTable {
         return new IncrementalKeyGenerator(byteset, temp).next(0L);
     }
 
-    protected BigInteger getPrimeModulus() {
+    protected BigInteger getModulus() {
         return BigInteger.valueOf(byteset.length).pow(passwordLength);
     }
 
