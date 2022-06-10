@@ -68,6 +68,17 @@ public class RainbowTableVerbose extends RainbowTable {
         return result;
     }
 
+    @Override
+    public void saveToFile(String pathname) {
+        long timeMillis = System.currentTimeMillis();
+
+        super.saveToFile(pathname);
+
+        timeMillis = System.currentTimeMillis() - timeMillis;
+        double seconds = timeMillis / 1000.0;
+        System.out.println("Zapis do pliku zakończony w " + seconds + "s");
+    }
+
     public static RainbowTable readFromFile(String pathname) throws IOException {
         RainbowTable rainbowTable = RainbowTable.readFromFile(pathname);
         return new RainbowTableVerbose(rainbowTable);

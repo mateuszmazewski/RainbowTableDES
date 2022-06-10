@@ -123,14 +123,13 @@ public class RainbowTable {
         return BigInteger.valueOf(byteset.length).pow(passwordLength);
     }
 
-    public double saveToFile(String pathname) {
+    public void saveToFile(String pathname) {
         if (table == null || table.size() == 0) {
             throw new IllegalStateException("Table not generated");
         }
 
         File out = new File(pathname);
         FileWriter fw;
-        long timeMillis = System.currentTimeMillis();
 
         try {
             fw = new FileWriter(out);
@@ -147,9 +146,6 @@ public class RainbowTable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        timeMillis = System.currentTimeMillis() - timeMillis;
-        return timeMillis / 1000.0;
     }
 
     public static RainbowTable readFromFile(String pathname) throws IOException {
