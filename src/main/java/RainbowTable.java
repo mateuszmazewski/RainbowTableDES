@@ -230,6 +230,7 @@ public class RainbowTable {
                 byte[] lookup = lookupChain(deses[threadId], startKey.get(), cryptogramToCrack);
                 if (lookup != null) {
                     foundKey[0] = lookup;
+                    System.out.println("Wątek " + Thread.currentThread().getId() % threadCount + " znalazł klucz. Zamykanie puli wątków.");
                     pool.shutdownNow();
                 }
 
@@ -247,6 +248,7 @@ public class RainbowTable {
         for (Runnable task : tasks) {
             pool.execute(task);
         }
+        System.out.println("Liczba wątków przeszukujących tablicę: " + threadCount);
         pool.shutdown(); // Execute all initiated tasks and shutdown the pool
 
         try {
