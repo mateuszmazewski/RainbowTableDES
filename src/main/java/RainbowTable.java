@@ -166,15 +166,15 @@ public class RainbowTable {
 
         line = reader.readLine();
         nLines++;
-        if (line != null && line.startsWith("chainLength")) {
-            line = line.replace("chainLength=", "");
+        if (line != null && line.startsWith("chainLength=")) {
+            line = line.replaceFirst("^chainLength=", "");
             chainLength = Integer.parseInt(line);
         }
 
         line = reader.readLine();
         nLines++;
-        if (line != null && line.startsWith("plaintext")) {
-            plaintext = line.replace("plaintext=", "");
+        if (line != null && line.startsWith("plaintext=")) {
+            plaintext = line.replaceFirst("^plaintext=", "");
         } else {
             throw new RuntimeException("Nie udało się wczytać tekstu jawnego z pliku");
         }
